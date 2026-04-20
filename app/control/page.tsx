@@ -91,7 +91,34 @@ export default function ControlPage() {
 
   /* ── Firestore sync ── */
   const send = (newState: ScoreboardState) => {
-    setDoc(doc(db, "scoreboard", "main"), newState, { merge: true });
+    const payload = {
+      score: {
+        a: newState.scoreA,
+        b: newState.scoreB,
+      },
+      fouls: {
+        a: newState.foulsA,
+        b: newState.foulsB,
+      },
+      period: newState.period,
+
+      teams: newState.teams,
+
+      theme: {
+        bgMain: newState.bgMain,
+        bgBlocks: newState.bgBlocks,
+        bgTimer: newState.bgTimer,
+        textColor: newState.textColor,
+        textMuted: newState.textMuted,
+        textAccent: newState.textAccent,
+        foulActive: newState.foulActive,
+        foulInactive: newState.foulInactive,
+      },
+
+      timer: newState.timer,
+    };
+
+    setDoc(doc(db, "scoreboard", "main"), payload, { merge: true });
   };
 
   const update = (newState: ScoreboardState) => {
@@ -156,7 +183,7 @@ export default function ControlPage() {
     update({ ...state, [key]: value });
 
   /* ─────────────────────────────────────────
-     STYLES
+     STYLES (UNCHANGED)
   ───────────────────────────────────────── */
   const s: Record<string, CSSProperties> = {
     body: {
@@ -222,7 +249,6 @@ export default function ControlPage() {
     <div style={s.body}>
       <h2>🏟 Pro Control Panel</h2>
 
-      {/* TABS */}
       <div style={s.tabs}>
         <button style={tabBtn(tab === "control")} onClick={() => setTab("control")}>
           Control
@@ -234,10 +260,8 @@ export default function ControlPage() {
 
       <div style={s.grid}>
 
-        {/* ── CONTROL TAB ── */}
         {tab === "control" && (
           <>
-            {/* Score */}
             <div style={s.box}>
               <h3>Score</h3>
               <button style={s.btn} onClick={() => changeScore("A", 1)}>+ Team A</button>
@@ -247,7 +271,6 @@ export default function ControlPage() {
               <button style={s.btn} onClick={resetScore}>Reset Score</button>
             </div>
 
-            {/* Fouls */}
             <div style={s.box}>
               <h3>Fouls</h3>
               <button style={s.btn} onClick={() => changeFoul("A", 1)}>+ Team A</button>
@@ -257,14 +280,12 @@ export default function ControlPage() {
               <button style={s.btn} onClick={resetFouls}>Reset Fouls</button>
             </div>
 
-            {/* Period */}
             <div style={s.box}>
               <h3>Period — {state.period}</h3>
               <button style={s.btn} onClick={() => shiftPeriod(1)}>Next →</button>
               <button style={s.btn} onClick={() => shiftPeriod(-1)}>← Prev</button>
             </div>
 
-            {/* Timer */}
             <div style={s.box}>
               <h3>Timer</h3>
               <label>Half duration (minutes)</label>
@@ -283,10 +304,8 @@ export default function ControlPage() {
           </>
         )}
 
-        {/* ── DESIGN TAB ── */}
         {tab === "design" && (
           <>
-            {/* Team names */}
             <div style={s.box}>
               <h3>Teams</h3>
               <label>Team A name</label>
@@ -303,7 +322,6 @@ export default function ControlPage() {
               />
             </div>
 
-            {/* Team colors */}
             <div style={s.box}>
               <h3>Team Colors</h3>
               <div style={s.colorRow}>
@@ -324,17 +342,16 @@ export default function ControlPage() {
               </div>
             </div>
 
-            {/* Theme colors */}
             <div style={s.box}>
               <h3>Theme</h3>
               {(
                 [
-                  ["bgMain",      "Main background"],
-                  ["bgBlocks",    "Blocks background"],
-                  ["bgTimer",     "Timer background"],
-                  ["textColor",   "Text color"],
-                  ["foulActive",  "Foul active"],
-                  ["foulInactive","Foul inactive"],
+                  ["bgMain", "Main background"],
+                  ["bgBlocks", "Blocks background"],
+                  ["bgTimer", "Timer background"],
+                  ["textColor", "Text color"],
+                  ["foulActive", "Foul active"],
+                  ["foulInactive", "Foul inactive"],
                 ] as [keyof ScoreboardState, string][]
               ).map(([key, label]) => (
                 <div key={key} style={s.colorRow}>

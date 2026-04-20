@@ -57,19 +57,15 @@ useEffect(() => {
 
   const interval = setInterval(() => {
     const t = state.timer;
-    if (!t) return;
-
-    const base = t.remaining ?? 0;
+    const now = Date.now();
 
     if (!t.running) {
-      setDisplayTime(formatTime(base));
+      setDisplayTime(formatTime(t.remaining ?? 0));
       return;
     }
 
-    const now = Date.now();
-    const elapsed = Math.floor((now - (t.lastUpdate || now)) / 1000);
-
-    const remaining = Math.max(base - elapsed, 0);
+    const elapsed = Math.floor((now - t.lastUpdate) / 1000);
+    const remaining = Math.max(t.remaining - elapsed, 0);
 
     setDisplayTime(formatTime(remaining));
   }, 250);
@@ -101,7 +97,7 @@ return (
         <div className="team-block team-a">
           <div className="team-name">{state.teamA ?? "Team A"}</div>
           <div className="score">{state.scoreA ?? 0}</div>
-          <Fouls value={state.foulsA ?? 0} />
+          <Fouls value={state.fouls?.a ?? state.foulsA ?? 0} />
         </div>
 
         {/* CENTER */}
@@ -114,29 +110,35 @@ return (
         <div className="team-block team-b">
           <div className="score">{state.scoreB ?? 0}</div>
           <div className="team-name">{state.teamB ?? "Team B"}</div>
-          <Fouls value={state.foulsB ?? 0} />
+          <Fouls value={state.fouls?.b ?? state.foulsB ?? 0} />
         </div>
 
       </div>
     </div>
 
     {/* GLOBAL CSS VARIABLES */}
-    <style jsx global>{`
-      :root {
-        --bg-main: ${state.bgMain ?? "#111"};
-        --bg-blocks: ${state.bgBlocks ?? "#1a1a1a"};
-        --bg-timer: ${state.bgTimer ?? "#1a1a1a"};
-        --color-a: ${state.colorA ?? "#00bfff"};
-        --color-b: ${state.colorB ?? "#ff3b3b"};
-        --foul-color: ${state.foulColor ?? "#ffffff"};
-      }
+  <style jsx global>{`
+  :root {
+    --bg-main: ${state.theme?.bgMain ?? "#111"};
+    --bg-blocks: ${state.theme?.bgBlocks ?? "#1a1a1a"};
+    --bg-timer: ${state.theme?.bgTimer ?? "#1a1a1a"};
 
-      body {
-        margin: 0;
-        font-family: "Segoe UI", Arial, sans-serif;
-        background: transparent;
-      }
-    `}</style>
+    --color-a: ${state.colorA ?? "#00bfff"};
+    --color-b: ${state.colorB ?? "#ff3b3b"};
+
+    --text: ${state.theme?.textColor ?? "#ffffff"};
+    --text-muted: ${state.theme?.textMuted ?? "#aaaaaa"};
+
+    --foul-active: ${state.theme?.foulActive ?? "#ffffff"};
+    --foul-inactive: ${state.theme?.foulInactive ?? "#333333"};
+  }
+
+  body {
+    margin: 0;
+    background: transparent;
+    color: var(--text);
+  }
+`}</style>
 
     {/* COMPONENT STYLES */}
     <style jsx>{`
@@ -148,6 +150,7 @@ return (
         background: var(--bg-main);
         border-radius: 8px;
         width: fit-content;
+        color: var(--text);
       }
 
       .timer {
@@ -222,7 +225,7 @@ return (
       }
 
       .foul.active {
-        background: var(--foul-color);
+        background: var(--foul-active);
       }
 
       .team-a::before {
