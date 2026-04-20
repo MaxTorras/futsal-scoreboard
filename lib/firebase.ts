@@ -1,16 +1,14 @@
-// lib/firebase.ts
-
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCeK1Rdv9JoEz1Y1ARUp_yQU0Wa-vwzntc",
-  authDomain: "futsalscoreboardinter.firebaseapp.com",
-  projectId: "futsalscoreboardinter",
-  storageBucket: "futsalscoreboardinter.firebasestorage.app",
-  messagingSenderId: "1058352114736",
-  appId: "1:1058352114736:web:ef8f27f1e97b87d4a9d1f5",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET!,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID!,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
 };
 
 const app = initializeApp(firebaseConfig);
