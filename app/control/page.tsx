@@ -13,38 +13,41 @@ export default function ControlPage() {
     foulsA: 0,
     foulsB: 0,
     period: "1st HALF",
-    timerDisplay: "20:00",
-    halfDuration: 20,
+
     colorA: "#00bfff",
     colorB: "#ff3b3b",
     bgMain: "#111111",
     bgBlocks: "#1a1a1a",
     bgTimer: "#1a1a1a",
+
+    timer: {
+      duration: 1200,
+      remaining: 1200,
+      running: false,
+      lastUpdate: 0,
+    },
   });
 
   const [halfMinutes, setHalfMinutes] = useState(20);
   const [presetName, setPresetName] = useState("");
   const [presets, setPresets] = useState<{ [key: string]: any }>({});
   const [selectedPreset, setSelectedPreset] = useState("");
-  
 
-  /* 🔁 SEND TO SERVER */
- const send = async (newState: any) => {
-  await setDoc(
-    doc(db, "scoreboards", "main"),
-    newState,
-    { merge: true }
-  );
-};
+  /* 🔁 SEND TO FIRESTORE */
+  const send = async (newState: any) => {
+    await setDoc(doc(db, "scoreboard", "main"), newState, {
+      merge: true,
+    });
+  };
 
-  /* 🧠 LOAD INITIAL STATE */
+  /* 🧠 LOAD */
   useEffect(() => {
     const load = async () => {
       try {
         const res = await fetch("/data");
         const data = await res.json();
         setState(data);
-      } catch (e) {
+      } catch {
         console.log("No server state yet");
       }
 
@@ -56,23 +59,16 @@ export default function ControlPage() {
   }, []);
 
   /* TEAMS */
-  const updateTeams = () => {
-    send(state);
-  };
+  const updateTeams = () => send(state);
 
   /* SCORE */
   const changeScore = (team: "A" | "B", val: number) => {
     const newState = {
       ...state,
-      scoreA:
-        team === "A"
-          ? Math.max(0, state.scoreA + val)
-          : state.scoreA,
-      scoreB:
-        team === "B"
-          ? Math.max(0, state.scoreB + val)
-          : state.scoreB,
+      scoreA: team === "A" ? Math.max(0, state.scoreA + val) : state.scoreA,
+      scoreB: team === "B" ? Math.max(0, state.scoreB + val) : state.scoreB,
     };
+
     setState(newState);
     send(newState);
   };
@@ -90,6 +86,7 @@ export default function ControlPage() {
           ? Math.min(5, Math.max(0, state.foulsB + val))
           : state.foulsB,
     };
+
     setState(newState);
     send(newState);
   };
@@ -103,13 +100,62 @@ export default function ControlPage() {
 
   /* TIMER */
   const setMatch = () => {
-    const newState = { ...state, halfDuration: halfMinutes };
+    const duration = halfMinutes * 60;
+
+    const newState = {
+      ...state,
+      timer: {
+        duration,
+        remaining: duration,
+        running: false,
+        lastUpdate: Date.now(),
+      },
+    };
+
     setState(newState);
     send(newState);
   };
 
-  const timerAction = (action: string) => {
-    const newState = { ...state, timerAction: action };
+  const calculateRemaining = (timer: any) => {
+    if (!timer.running) return timer.remaining;
+
+    const elapsed = Math.floor((Date.now() - timer.lastUpdate) / 1000);
+    return Math.max(timer.remaining - elapsed, 0);
+  };
+
+  const timerAction = (action: "start" | "pause" | "reset") => {
+    const now = Date.now();
+
+    let newTimer = { ...state.timer };
+
+    if (action === "start") {
+      newTimer.remaining = calculateRemaining(state.timer);
+      newTimer.running = true;
+      newTimer.lastUpdate = now;
+    }
+
+    if (action === "pause") {
+      newTimer.remaining = calculateRemaining(state.timer);
+      newTimer.running = false;
+      newTimer.lastUpdate = now;
+    }
+
+    if (action === "reset") {
+      const duration = state.timer.duration || halfMinutes * 60;
+
+      newTimer = {
+        duration,
+        remaining: duration,
+        running: false,
+        lastUpdate: now,
+      };
+    }
+
+    const newState = {
+      ...state,
+      timer: newTimer,
+    };
+
     setState(newState);
     send(newState);
   };
@@ -127,8 +173,6 @@ export default function ControlPage() {
   };
 
   const applyColors = () => send(state);
-
-  /* THEME */
   const applyTheme = () => send(state);
 
   /* PRESETS */
@@ -161,183 +205,255 @@ export default function ControlPage() {
     send(newState);
   };
 
-  return (
-    <div style={styles.body}>
-      <h2>🏟 Scoreboard Control Panel</h2>
+  /* ================= UI ================= */
 
-      <div style={styles.grid}>
-        {/* TEAMS */}
-        <div style={styles.section}>
-          <h3>Teams</h3>
-          <input
-            value={state.teamA}
-            onChange={(e) =>
-              setState({ ...state, teamA: e.target.value })
-            }
-          />
-          <input
-            value={state.teamB}
-            onChange={(e) =>
-              setState({ ...state, teamB: e.target.value })
-            }
-          />
-          <button onClick={updateTeams}>Update</button>
-        </div>
+  const styles = {
+    body: {
+      margin: 0,
+      padding: 12,
+      fontFamily: "Segoe UI, Arial",
+      background: "#0f0f0f",
+      color: "white",
+      minHeight: "100vh",
+    },
+    grid: {
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+      gap: 12,
+    },
+    section: {
+      background: "#1a1a1a",
+      padding: 12,
+      borderRadius: 10,
+      display: "flex",
+      flexDirection: "column",
+      gap: 6,
+    },
+    button: {
+      padding: "10px 12px",
+      fontSize: "14px",
+      borderRadius: 8,
+      border: "none",
+      background: "#333",
+      color: "white",
+      cursor: "pointer",
+    },
+    input: {
+      padding: 10,
+      borderRadius: 6,
+      border: "none",
+      width: "100%",
+      fontSize: 14,
+    },
+  } as const;
+return (
+  <div style={styles.body}>
+    <h2>🏟 Scoreboard Control Panel</h2>
 
-        {/* SCORE */}
-        <div style={styles.section}>
-          <h3>Score</h3>
-          <button onClick={() => changeScore("A", 1)}>+ A</button>
-          <button onClick={() => changeScore("A", -1)}>- A</button>
-          <br />
-          <button onClick={() => changeScore("B", 1)}>+ B</button>
-          <button onClick={() => changeScore("B", -1)}>- B</button>
-        </div>
+    <div style={styles.grid}>
+      {/* TEAMS */}
+      <div style={styles.section}>
+        <h3>Teams</h3>
 
-        {/* FOULS */}
-        <div style={styles.section}>
-          <h3>Fouls</h3>
-          <button onClick={() => changeFoul("A", 1)}>+ A</button>
-          <button onClick={() => changeFoul("A", -1)}>- A</button>
-          <br />
-          <button onClick={() => changeFoul("B", 1)}>+ B</button>
-          <button onClick={() => changeFoul("B", -1)}>- B</button>
-        </div>
+        <input
+          style={styles.input}
+          value={state.teamA}
+          onChange={(e) => setState({ ...state, teamA: e.target.value })}
+        />
 
-        {/* PERIOD */}
-        <div style={styles.section}>
-          <h3>Period</h3>
-          <button onClick={() => setPeriod("1st HALF")}>1st</button>
-          <button onClick={() => setPeriod("2nd HALF")}>2nd</button>
-          <button onClick={() => setPeriod("HALF TIME")}>HT</button>
-          <button onClick={() => setPeriod("FULL TIME")}>FT</button>
-        </div>
+        <input
+          style={styles.input}
+          value={state.teamB}
+          onChange={(e) => setState({ ...state, teamB: e.target.value })}
+        />
 
-        {/* TIMER */}
-        <div style={styles.section}>
-          <h3>Timer</h3>
-          <input
-            type="number"
-            value={halfMinutes}
-            onChange={(e) => setHalfMinutes(Number(e.target.value))}
-          />
-          <button onClick={setMatch}>Set Match</button>
-          <br />
-          <button onClick={() => timerAction("start")}>Start</button>
-          <button onClick={() => timerAction("pause")}>Pause</button>
-          <button onClick={() => timerAction("reset")}>Reset</button>
-        </div>
+        <button style={styles.button} onClick={updateTeams}>
+          Update Teams
+        </button>
+      </div>
 
-        {/* COLORS */}
-        <div style={styles.section}>
-          <h3>Colors</h3>
+      {/* SCORE */}
+      <div style={styles.section}>
+        <h3>Score</h3>
 
-          <label>Team A</label>
-          <input
-            type="color"
-            value={state.colorA}
-            onChange={(e) => updateColor("A", e.target.value)}
-          />
-          <input
-            value={state.colorA}
-            onChange={(e) => updateColor("A", e.target.value)}
-          />
+        <button style={styles.button} onClick={() => changeScore("A", 1)}>
+          + A
+        </button>
+        <button style={styles.button} onClick={() => changeScore("A", -1)}>
+          - A
+        </button>
 
-          <label>Team B</label>
-          <input
-            type="color"
-            value={state.colorB}
-            onChange={(e) => updateColor("B", e.target.value)}
-          />
-          <input
-            value={state.colorB}
-            onChange={(e) => updateColor("B", e.target.value)}
-          />
+        <button style={styles.button} onClick={() => changeScore("B", 1)}>
+          + B
+        </button>
+        <button style={styles.button} onClick={() => changeScore("B", -1)}>
+          - B
+        </button>
+      </div>
 
-          <button onClick={applyColors}>Apply</button>
+      {/* FOULS */}
+      <div style={styles.section}>
+        <h3>Fouls</h3>
 
-          <hr />
+        <button style={styles.button} onClick={() => changeFoul("A", 1)}>
+          + A
+        </button>
+        <button style={styles.button} onClick={() => changeFoul("A", -1)}>
+          - A
+        </button>
 
-          <h4>Presets</h4>
+        <button style={styles.button} onClick={() => changeFoul("B", 1)}>
+          + B
+        </button>
+        <button style={styles.button} onClick={() => changeFoul("B", -1)}>
+          - B
+        </button>
+      </div>
 
-          <input
-            placeholder="Preset name"
-            value={presetName}
-            onChange={(e) => setPresetName(e.target.value)}
-          />
-          <button onClick={savePreset}>Save</button>
+      {/* PERIOD */}
+      <div style={styles.section}>
+        <h3>Period</h3>
 
-          <select
-            value={selectedPreset}
-            onChange={(e) => setSelectedPreset(e.target.value)}
-          >
-            <option value="">Select preset</option>
-            {Object.keys(presets).map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-          </select>
+        <button style={styles.button} onClick={() => setPeriod("1st HALF")}>
+          1st
+        </button>
+        <button style={styles.button} onClick={() => setPeriod("2nd HALF")}>
+          2nd
+        </button>
+        <button style={styles.button} onClick={() => setPeriod("HALF TIME")}>
+          HT
+        </button>
+        <button style={styles.button} onClick={() => setPeriod("FULL TIME")}>
+          FT
+        </button>
+      </div>
 
-          <button onClick={loadPreset}>Load</button>
-        </div>
+      {/* TIMER */}
+      <div style={styles.section}>
+        <h3>Timer</h3>
 
-        {/* THEME */}
-        <div style={styles.section}>
-          <h3>Theme</h3>
+        <input
+          style={styles.input}
+          type="number"
+          value={halfMinutes}
+          onChange={(e) => setHalfMinutes(Number(e.target.value))}
+        />
 
-          <label>Main</label>
-          <input
-            type="color"
-            value={state.bgMain}
-            onChange={(e) =>
-              setState({ ...state, bgMain: e.target.value })
-            }
-          />
+        <button style={styles.button} onClick={setMatch}>
+          Set Match
+        </button>
 
-          <label>Blocks</label>
-          <input
-            type="color"
-            value={state.bgBlocks}
-            onChange={(e) =>
-              setState({ ...state, bgBlocks: e.target.value })
-            }
-          />
+        <button style={styles.button} onClick={() => timerAction("start")}>
+          Start
+        </button>
+        <button style={styles.button} onClick={() => timerAction("pause")}>
+          Pause
+        </button>
+        <button style={styles.button} onClick={() => timerAction("reset")}>
+          Reset
+        </button>
+      </div>
 
-          <label>Timer</label>
-          <input
-            type="color"
-            value={state.bgTimer}
-            onChange={(e) =>
-              setState({ ...state, bgTimer: e.target.value })
-            }
-          />
+      {/* COLORS */}
+      <div style={styles.section}>
+        <h3>Colors</h3>
 
-          <button onClick={applyTheme}>Apply</button>
-        </div>
+        <label>Team A</label>
+        <input
+          type="color"
+          value={state.colorA}
+          onChange={(e) => updateColor("A", e.target.value)}
+        />
+        <input
+          style={styles.input}
+          value={state.colorA}
+          onChange={(e) => updateColor("A", e.target.value)}
+        />
+
+        <label>Team B</label>
+        <input
+          type="color"
+          value={state.colorB}
+          onChange={(e) => updateColor("B", e.target.value)}
+        />
+        <input
+          style={styles.input}
+          value={state.colorB}
+          onChange={(e) => updateColor("B", e.target.value)}
+        />
+
+        <button style={styles.button} onClick={applyColors}>
+          Apply Colors
+        </button>
+
+        <hr />
+
+        <h4>Presets</h4>
+
+        <input
+          style={styles.input}
+          placeholder="Preset name"
+          value={presetName}
+          onChange={(e) => setPresetName(e.target.value)}
+        />
+
+        <button style={styles.button} onClick={savePreset}>
+          Save Preset
+        </button>
+
+        <select
+          style={styles.input}
+          value={selectedPreset}
+          onChange={(e) => setSelectedPreset(e.target.value)}
+        >
+          <option value="">Select preset</option>
+          {Object.keys(presets).map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
+
+        <button style={styles.button} onClick={loadPreset}>
+          Load Preset
+        </button>
+      </div>
+
+      {/* THEME */}
+      <div style={styles.section}>
+        <h3>Theme</h3>
+
+        <label>Main</label>
+        <input
+          type="color"
+          value={state.bgMain}
+          onChange={(e) => setState({ ...state, bgMain: e.target.value })}
+        />
+
+        <label>Blocks</label>
+        <input
+          type="color"
+          value={state.bgBlocks}
+          onChange={(e) =>
+            setState({ ...state, bgBlocks: e.target.value })
+          }
+        />
+
+        <label>Timer</label>
+        <input
+          type="color"
+          value={state.bgTimer}
+          onChange={(e) =>
+            setState({ ...state, bgTimer: e.target.value })
+          }
+        />
+
+        <button style={styles.button} onClick={applyTheme}>
+          Apply Theme
+        </button>
       </div>
     </div>
-  );
+  </div>
+);
 }
 
-/* 🎨 STYLES */
-const styles: any = {
-  body: {
-    margin: 0,
-    padding: 20,
-    fontFamily: "Segoe UI, Arial",
-    background: "#0f0f0f",
-    color: "white",
-    minHeight: "100vh",
-  },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-    gap: 15,
-  },
-  section: {
-    background: "#1a1a1a",
-    padding: 15,
-    borderRadius: 10,
-  },
-};
