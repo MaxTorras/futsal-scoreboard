@@ -9,16 +9,11 @@ import { db } from "@/lib/firebase";
 ---------------------------- */
 function Fouls({ value }: { value: number }) {
   return (
-    <div style={{ display: "flex", gap: 4 }}>
+    <div className="fouls-wrap">
       {Array.from({ length: 5 }).map((_, i) => (
         <div
           key={i}
-          style={{
-            width: 10,
-            height: 14,
-            borderRadius: 2,
-            background: i < value ? "white" : "#333",
-          }}
+          className={`foul ${i < value ? "active" : ""}`}
         />
       ))}
     </div>
@@ -57,31 +52,30 @@ export default function OverlayPage() {
   /* ===========================
      TIMER ENGINE
   =========================== */
-  useEffect(() => {
-    if (!state?.timer) return;
+useEffect(() => {
+  if (!state?.timer) return;
 
-    const interval = setInterval(() => {
-      const t = state.timer;
+  const interval = setInterval(() => {
+    const t = state.timer;
+    if (!t) return;
 
-      if (!t) return;
+    const base = t.remaining ?? 0;
 
-      // paused → just display stored remaining
-      if (!t.running) {
-        setDisplayTime(formatTime(t.remaining || 0));
-        return;
-      }
+    if (!t.running) {
+      setDisplayTime(formatTime(base));
+      return;
+    }
 
-      // running → calculate live
-      const now = Date.now();
-      const elapsed = Math.floor((now - t.lastUpdate) / 1000);
+    const now = Date.now();
+    const elapsed = Math.floor((now - (t.lastUpdate || now)) / 1000);
 
-      const remaining = Math.max((t.remaining || 0) - elapsed, 0);
+    const remaining = Math.max(base - elapsed, 0);
 
-      setDisplayTime(formatTime(remaining));
-    }, 250);
+    setDisplayTime(formatTime(remaining));
+  }, 250);
 
-    return () => clearInterval(interval);
-  }, [state?.timer]);
+  return () => clearInterval(interval);
+}, [state?.timer?.running, state?.timer?.remaining, state?.timer?.lastUpdate]);
 
   /* ===========================
      LOADING STATE
@@ -94,158 +88,161 @@ export default function OverlayPage() {
     );
   }
 
-  /* ===========================
-     UI
-  =========================== */
-  return (
-    <>
-      <div className="scoreboard">
-        {/* TIMER */}
-        <div className="timer">{displayTime}</div>
+return (
+  <>
+    <div className="scoreboard">
+      {/* TIMER */}
+      <div className="timer">{displayTime}</div>
 
-        {/* TEAMS */}
-        <div className="teams">
-          {/* TEAM A */}
-          <div className="team-block team-a">
-            <div className="team-name">{state.teamA || "Team A"}</div>
-            <div className="score">{state.scoreA ?? 0}</div>
-            <div className="fouls">
-              <Fouls value={state.foulsA ?? 0} />
-            </div>
-          </div>
+      {/* TEAMS WRAPPER */}
+      <div className="teams">
 
-          {/* CENTER */}
-          <div className="divider-container">
-            <div className="divider">-</div>
-            <div className="period">{state.period || "1st HALF"}</div>
-          </div>
-
-          {/* TEAM B */}
-          <div className="team-block team-b">
-            <div className="score">{state.scoreB ?? 0}</div>
-            <div className="team-name">{state.teamB || "Team B"}</div>
-            <div className="fouls">
-              <Fouls value={state.foulsB ?? 0} />
-            </div>
-          </div>
+        {/* TEAM A */}
+        <div className="team-block team-a">
+          <div className="team-name">{state.teamA ?? "Team A"}</div>
+          <div className="score">{state.scoreA ?? 0}</div>
+          <Fouls value={state.foulsA ?? 0} />
         </div>
+
+        {/* CENTER */}
+        <div className="center">
+          <div className="divider">-</div>
+          <div className="period">{state.period ?? "1st HALF"}</div>
+        </div>
+
+        {/* TEAM B */}
+        <div className="team-block team-b">
+          <div className="score">{state.scoreB ?? 0}</div>
+          <div className="team-name">{state.teamB ?? "Team B"}</div>
+          <Fouls value={state.foulsB ?? 0} />
+        </div>
+
       </div>
+    </div>
 
-      {/* ===========================
-         DYNAMIC COLORS
-      =========================== */}
-      <style jsx global>{`
-        :root {
-          --bgMain: ${state.bgMain || "#111"};
-          --bgBlocks: ${state.bgBlocks || "#1a1a1a"};
-          --bgTimer: ${state.bgTimer || "#1a1a1a"};
-          --colorA: ${state.colorA || "#00bfff"};
-          --colorB: ${state.colorB || "#ff3b3b"};
-        }
+    {/* GLOBAL CSS VARIABLES */}
+    <style jsx global>{`
+      :root {
+        --bg-main: ${state.bgMain ?? "#111"};
+        --bg-blocks: ${state.bgBlocks ?? "#1a1a1a"};
+        --bg-timer: ${state.bgTimer ?? "#1a1a1a"};
+        --color-a: ${state.colorA ?? "#00bfff"};
+        --color-b: ${state.colorB ?? "#ff3b3b"};
+        --foul-color: ${state.foulColor ?? "#ffffff"};
+      }
 
-        body {
-          margin: 0;
-          background: transparent;
-          font-family: "Segoe UI", Arial, sans-serif;
-        }
-      `}</style>
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Arial, sans-serif;
+        background: transparent;
+      }
+    `}</style>
 
-      {/* ===========================
-         SCOREBOARD STYLES
-      =========================== */}
-      <style jsx>{`
-        .scoreboard {
-          display: grid;
-          grid-template-columns: auto 1fr auto;
-          align-items: center;
-          gap: 14px;
-          color: white;
-          padding: 10px 16px;
-          background: var(--bgMain);
-          border-radius: 8px;
-          width: fit-content;
-        }
+    {/* COMPONENT STYLES */}
+    <style jsx>{`
+      .scoreboard {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 10px 14px;
+        background: var(--bg-main);
+        border-radius: 8px;
+        width: fit-content;
+      }
 
-        .timer {
-          font-size: 20px;
-          font-weight: 700;
-          width: 80px;
-          text-align: center;
-          background: var(--bgTimer);
-          padding: 8px;
-          border-radius: 6px;
-          font-variant-numeric: tabular-nums;
-        }
+      .timer {
+        width: 85px;
+        text-align: center;
+        font-size: 20px;
+        font-weight: 700;
+        padding: 8px;
+        border-radius: 6px;
+        background: var(--bg-timer);
+        font-variant-numeric: tabular-nums;
+      }
 
-        .teams {
-          display: flex;
-          align-items: center;
-        }
+      .teams {
+        display: flex;
+        align-items: center;
+      }
 
-        .team-block {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 0 18px;
-          height: 60px;
-          background: var(--bgBlocks);
-          border-radius: 6px;
-          position: relative;
-        }
+      .team-block {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 18px;
+        height: 60px;
+        background: var(--bg-blocks);
+        border-radius: 6px;
+        position: relative;
+      }
 
-        .team-name {
-          font-size: 14px;
-          font-weight: 600;
-          text-transform: uppercase;
-        }
+      .team-name {
+        font-size: 14px;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
 
-        .score {
-          font-size: 32px;
-          font-weight: 800;
-          min-width: 40px;
-          text-align: center;
-        }
+      .score {
+        font-size: 32px;
+        font-weight: 800;
+        min-width: 40px;
+        text-align: center;
+      }
 
-        .divider-container {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          margin: 0 10px;
-        }
+      .center {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 0 10px;
+      }
 
-        .divider {
-          font-size: 26px;
-          color: #888;
-        }
+      .divider {
+        font-size: 26px;
+        color: #888;
+      }
 
-        .period {
-          font-size: 10px;
-          color: #aaa;
-        }
+      .period {
+        font-size: 10px;
+        color: #aaa;
+      }
 
-        .fouls {
-          position: absolute;
-          bottom: -16px;
-        }
+      .fouls-wrap {
+        position: absolute;
+        bottom: -16px;
+        display: flex;
+        gap: 4px;
+      }
 
-        .team-a::before {
-          content: "";
-          position: absolute;
-          left: 0;
-          width: 5px;
-          height: 100%;
-          background: var(--colorA);
-        }
+      .foul {
+        width: 10px;
+        height: 14px;
+        background: #333;
+        border-radius: 2px;
+      }
 
-        .team-b::after {
-          content: "";
-          position: absolute;
-          right: 0;
-          width: 5px;
-          height: 100%;
-          background: var(--colorB);
-        }
-      `}</style>
-    </>
-  );
+      .foul.active {
+        background: var(--foul-color);
+      }
+
+      .team-a::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        width: 5px;
+        height: 100%;
+        background: var(--color-a);
+      }
+
+      .team-b::after {
+        content: "";
+        position: absolute;
+        right: 0;
+        width: 5px;
+        height: 100%;
+        background: var(--color-b);
+      }
+    `}</style>
+  </>
+);
 }
