@@ -95,7 +95,15 @@ return (
 
         {/* TEAM A */}
         <div className="team-block team-a">
-          <div className="team-name">{state.teamA ?? "Team A"}</div>
+            {state.teams?.a?.logo && (
+  <img
+    src={state.teams.a.logo}
+    className="team-logo"
+    alt="Team A logo"
+  />
+)}
+          <div className="team-name">{state.teams?.a?.name ?? "Team A"}</div>
+          
           <div className="score">{state.scoreA ?? 0}</div>
           <Fouls value={state.fouls?.a ?? state.foulsA ?? 0} />
         </div>
@@ -109,7 +117,14 @@ return (
         {/* TEAM B */}
         <div className="team-block team-b">
           <div className="score">{state.scoreB ?? 0}</div>
-          <div className="team-name">{state.teamB ?? "Team B"}</div>
+          <div className="team-name">{state.teams?.b?.name ?? "Team B"}</div>
+          {state.teams?.b?.logo && (
+  <img
+    src={state.teams.b.logo}
+    className="team-logo"
+    alt="Team B logo"
+  />
+)}
           <Fouls value={state.fouls?.b ?? state.foulsB ?? 0} />
         </div>
 
@@ -123,8 +138,8 @@ return (
     --bg-blocks: ${state.theme?.bgBlocks ?? "#1a1a1a"};
     --bg-timer: ${state.theme?.bgTimer ?? "#1a1a1a"};
 
-    --color-a: ${state.colorA ?? "#00bfff"};
-    --color-b: ${state.colorB ?? "#ff3b3b"};
+    --color-a: ${state.teams?.a?.color ?? "#00bfff"};
+--color-b: ${state.teams?.b?.color ?? "#ff3b3b"};
 
     --text: ${state.theme?.textColor ?? "#ffffff"};
     --text-muted: ${state.theme?.textMuted ?? "#aaaaaa"};
@@ -172,18 +187,23 @@ return (
       .team-block {
         display: flex;
         align-items: center;
-        gap: 12px;
-        padding: 0 18px;
+        gap: 10px;
+        padding: 0 14px;
         height: 60px;
         background: var(--bg-blocks);
         border-radius: 6px;
         position: relative;
+        overflow: hidden;
       }
 
       .team-name {
         font-size: 14px;
         font-weight: 600;
         text-transform: uppercase;
+          max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
       }
 
       .score {
@@ -244,7 +264,14 @@ return (
         width: 5px;
         height: 100%;
         background: var(--color-b);
+
+
       }
+        .team-logo {
+  width: 60px;
+  height: 60px;
+  border-radius: 4px;
+}
     `}</style>
   </>
 );
