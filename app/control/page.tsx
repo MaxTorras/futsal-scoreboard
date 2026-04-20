@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export default function ControlPage() {
   const [state, setState] = useState({
@@ -24,15 +26,16 @@ export default function ControlPage() {
   const [presetName, setPresetName] = useState("");
   const [presets, setPresets] = useState<{ [key: string]: any }>({});
   const [selectedPreset, setSelectedPreset] = useState("");
+  
 
   /* 🔁 SEND TO SERVER */
-  const send = async (newState = state) => {
-    await fetch("/update", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newState),
-    });
-  };
+ const send = async (newState: any) => {
+  await setDoc(
+    doc(db, "scoreboards", "main"),
+    newState,
+    { merge: true }
+  );
+};
 
   /* 🧠 LOAD INITIAL STATE */
   useEffect(() => {

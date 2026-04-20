@@ -1,67 +1,75 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { db } from "@/lib/firebase";
 import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
-export default function Overlay() {
-  const [data, setData] = useState<any>(null);
+/* 🟥 FOULS RENDER (KEEP OUTSIDE COMPONENT) */
+function renderFouls(value: number) {
+  return Array.from({ length: 5 }).map((_, i) => (
+    <div key={i} className={`card ${i < value ? "active" : ""}`} />
+  ));
+}
 
+export default function OverlayPage() {
+  const [state, setState] = useState<any>(null);
+
+  /* 🔥 FIREBASE LISTENER */
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, "scoreboard", "main"), (doc) => {
-      setData(doc.data());
+    const unsub = onSnapshot(doc(db, "scoreboard", "main"), (snap) => {
+      if (snap.exists()) {
+        setState(snap.data());
+      }
     });
+
     return () => unsub();
   }, []);
 
-  if (!data) return null;
+  /* ⛔ WAIT FOR DATA */
+  if (!state) return null;
 
   return (
     <>
       <div className="scoreboard">
-        <div className="timer">{data.timerDisplay || "20:00"}</div>
+        <div className="timer">{state.timerDisplay || "20:00"}</div>
 
         <div className="teams">
           <div className="team-block team-a">
-            <div className="team-name">{data.teamA || "Team A"}</div>
-            <div className="score">{data.scoreA || 0}</div>
-            <div className="fouls">
-              {renderFouls(data.foulsA || 0)}
-            </div>
+            <div className="team-name">{state.teamA || "Team A"}</div>
+            <div className="score">{state.scoreA || 0}</div>
+            <div className="fouls">{renderFouls(state.foulsA || 0)}</div>
           </div>
 
           <div className="divider-container">
             <div className="divider">-</div>
-            <div className="period">{data.period || "1st HALF"}</div>
+            <div className="period">{state.period || "1st HALF"}</div>
           </div>
 
           <div className="team-block team-b">
-            <div className="score">{data.scoreB || 0}</div>
-            <div className="team-name">{data.teamB || "Team B"}</div>
-            <div className="fouls">
-              {renderFouls(data.foulsB || 0)}
-            </div>
+            <div className="score">{state.scoreB || 0}</div>
+            <div className="team-name">{state.teamB || "Team B"}</div>
+            <div className="fouls">{renderFouls(state.foulsB || 0)}</div>
           </div>
         </div>
       </div>
 
-      {/* 🎨 Dynamic colors */}
+      {/* 🎨 DYNAMIC COLORS */}
       <style jsx global>{`
         :root {
-          --bgMain: ${data.bgMain || "#111"};
-          --bgBlocks: ${data.bgBlocks || "#1a1a1a"};
-          --bgTimer: ${data.bgTimer || "#1a1a1a"};
-          --colorA: ${data.colorA || "#00bfff"};
-          --colorB: ${data.colorB || "#ff3b3b"};
+          --bgMain: ${state.bgMain || "#111"};
+          --bgBlocks: ${state.bgBlocks || "#1a1a1a"};
+          --bgTimer: ${state.bgTimer || "#1a1a1a"};
+          --colorA: ${state.colorA || "#00bfff"};
+          --colorB: ${state.colorB || "#ff3b3b"};
         }
       `}</style>
 
-      {/* 🎨 Styles */}
+      {/* 🎨 STYLES */}
       <style jsx>{`
         body {
           margin: 0;
           background: transparent;
-          font-family: 'Segoe UI', Arial, sans-serif;
+          font-family: "Segoe UI", Arial, sans-serif;
         }
 
         .scoreboard {
@@ -175,11 +183,4 @@ export default function Overlay() {
       `}</style>
     </>
   );
-}
-
-/* 🟥 FOULS RENDER */
-function renderFouls(value: number) {
-  return Array.from({ length: 5 }).map((_, i) => (
-    <div key={i} className={`card ${i < value ? "active" : ""}`} />
-  ));
 }
