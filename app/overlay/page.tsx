@@ -36,6 +36,9 @@ function formatTime(sec: number) {
 export default function OverlayPage() {
   const [state, setState] = useState<any>(null);
   const [displayTime, setDisplayTime] = useState("00:00");
+  const [lastScoreA, setLastScoreA] = useState(0);
+const [animateA, setAnimateA] = useState(false);
+
 
   /* ===========================
      FIRESTORE LISTENER
@@ -94,20 +97,26 @@ return (
       {/* TEAMS WRAPPER */}
       <div className="teams">
 
-        {/* TEAM A */}
-        <div className="team-block team-a">
-            {state.teams?.a?.logo && (
-  <img
-    src={state.teams.a.logo}
-    className="team-logo"
-    alt="Team A logo"
-  />
-)}
-          <div className="team-name">{state.teams?.a?.name ?? "Team A"}</div>
-          
-          <div className="score score-pop">{state.score?.a ?? 0}</div>
-          <Fouls value={state.fouls?.a ?? state.foulsA ?? 0} />
-        </div>
+       {/* TEAM A */}
+<div className="team-block team-a">
+  {state.teams?.a?.logo && (
+    <img
+      src={state.teams.a.logo}
+      className="team-logo"
+      alt="Team A logo"
+    />
+  )}
+
+  <div className="team-name">
+    {state.teams?.a?.name ?? "Team A"}
+  </div>
+
+  <div className={`score ${animateA ? "score-pop" : ""}`}>
+    {state.score?.a ?? 0}
+  </div>
+
+  <Fouls value={state.fouls?.a ?? state.foulsA ?? 0} />
+</div>
 
         {/* CENTER */}
         <div className="center">
@@ -258,20 +267,35 @@ return (
         background: var(--color-a);
       }
 
-      .team-b::after {
-        content: "";
-        position: absolute;
-        right: 0;
-        width: 5px;
-        height: 100%;
-        background: var(--color-b);
+ .team-b::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  width: 5px;
+  height: 100%;
+  background: var(--color-b);
+}
 
-
-      }
-        .team-logo {
-  width: 60px;
-  height: 60px;
+.team-logo {
+  width: 40px;
+  height: 40px;
   border-radius: 4px;
+  object-fit: cover;
+}
+  .score-pop {
+  animation: pop 0.2s ease;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
     `}</style>
   </>
