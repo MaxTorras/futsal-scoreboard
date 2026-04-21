@@ -1,3 +1,4 @@
+// app\overlay\page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -104,7 +105,7 @@ return (
 )}
           <div className="team-name">{state.teams?.a?.name ?? "Team A"}</div>
           
-          <div className="score">{state.scoreA ?? 0}</div>
+          <div className="score score-pop">{state.score?.a ?? 0}</div>
           <Fouls value={state.fouls?.a ?? state.foulsA ?? 0} />
         </div>
 
@@ -116,7 +117,7 @@ return (
 
         {/* TEAM B */}
         <div className="team-block team-b">
-          <div className="score">{state.scoreB ?? 0}</div>
+          <div className="score score-pop">{state.score?.b ?? 0}</div>
           <div className="team-name">{state.teams?.b?.name ?? "Team B"}</div>
           {state.teams?.b?.logo && (
   <img
