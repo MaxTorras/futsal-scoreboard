@@ -1,40 +1,23 @@
-@import "tailwindcss";
-
-/* ─────────────────────────────
-   BASE RESET (IMPORTANT FOR OVERLAY)
-───────────────────────────── */
+@import "tailwindcss"; /* optional */
 
 html, body {
   margin: 0;
   padding: 0;
   height: 100%;
-  background: transparent !important; /* important for OBS overlays */
-  color: inherit;
+  background: transparent !important;
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Prevent weird browser defaults in overlays */
 * {
   box-sizing: border-box;
 }
 
-/* Inputs need explicit styling (otherwise black text issues) */
-input, textarea {
+input, textarea, button {
   font: inherit;
   color: inherit;
 }
 
-/* Buttons should NOT inherit weird OS styles */
-button {
-  font: inherit;
-  color: inherit;
-}
-
-/* ─────────────────────────────
-   OPTIONAL: DEBUG SAFE MODE
-   (uncomment if needed)
-───────────────────────────── */
-
+/* optional debug mode */
 /*
 body {
   background: #0f0f0f;

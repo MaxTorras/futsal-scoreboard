@@ -1,0 +1,165 @@
+body {
+  margin: 0;
+  background: transparent;
+  font-family: 'Poppins', Arial, sans-serif;
+}
+
+/* OUTER WRAPPER */
+.scoreboard-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-top: 60px;
+}
+
+/* SCOREBOARD MAIN */
+.scoreboard {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 15px;
+  color: #ffffff;
+  padding: 12px 20px;
+  background: #000000;
+  border-radius: 6px;
+  min-height: 60px;
+  width: fit-content;
+}
+
+/* TIMER */
+.timer-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.timer {
+  font-size: 20px;
+  font-weight: 600;
+  width: 80px;
+  height: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #1a1a1a;
+  border-radius: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.period {
+  font-size: 10px;
+  color: #aaa;
+  line-height: 1;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* CENTER ROW */
+.teams {
+  display: flex;
+  align-items: center;
+}
+
+/* TEAM A */
+.team-block-a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 20px;
+  height: 60px;
+  border-radius: 6px 0 0 6px;
+  background: #781030;
+  position: relative;
+  overflow: hidden;
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    95% 50%,
+    100% 100%,
+    0 100%
+  );
+}
+
+/* TEAM B */
+.team-block-b {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 20px;
+  height: 60px;
+  border-radius: 0 6px 6px 0;
+  background: red;
+  position: relative;
+  overflow: hidden;
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% 100%,
+    0 100%,
+    05% 50%
+  );
+}
+
+/* TEAM NAME (IMPORTANT FIX) */
+.teamName {
+  text-transform: uppercase;
+  font-size: 34px;
+  font-weight: 700;
+}
+
+/* SCORE */
+.score {
+  font-size: 34px;
+  font-weight: 700;
+
+  width: 50px;              /* 🔥 key fix */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* LOGO */
+.logo {
+  height: 60px;
+  width: 60px;
+  object-fit: contain;
+}
+
+/* DIVIDER */
+.divider-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* gap: -25px; */
+  /* min-width: 140px; keeps structure stable */
+}
+
+.divider {
+  font-size: 28px;
+  color: #888;
+  font-weight: bold;
+}
+
+/* FOULS */
+.fouls {
+  display: flex;
+  font-size: 14px;
+  color: white;
+}
+
+/* EXTENSION (keep if you use it) */
+.scoreboard-extension {
+  display: flex;
+  justify-content: center;   /* key change */
+  align-items: center;
+  gap: 150px;                 /* controls spacing between fouls */
+  width: fit-content;
+
+  margin: -15px -20px 0 50px; /* centers it under scoreboard */
+  background: black;
+  border-radius: 0 0 10px 10px;
+  padding: 4px 20px;
+}

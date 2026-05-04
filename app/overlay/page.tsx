@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import "../overlay/scoreboard.css"
 
 /* ---------------------------
-   FOULS COMPONENT
+   FOULS
 ---------------------------- */
 function Fouls({ value }: { value: number }) {
   return (
@@ -47,39 +48,32 @@ export default function OverlayPage() {
 
   const [period, setPeriod] = useState("2nd HALF");
 
-  /* ===========================
-     FIRESTORE LISTENER (single source of truth)
-  =========================== */
+  /* ---------------------------
+     FIRESTORE
+  ---------------------------- */
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "scoreboard", "main"), (snap) => {
       const data = snap.data();
       if (!data) return;
 
-      // SCORE
       setScoreA(data?.score?.a ?? 0);
       setScoreB(data?.score?.b ?? 0);
 
-      // TIMER
       const t = data?.timer?.remaining ?? 0;
       setTime(formatTime(t));
 
-      // TEAMS
       setTeamA(data?.teams?.a?.name ?? "HOME");
       setTeamB(data?.teams?.b?.name ?? "AWAY");
 
-      // LOGOS
       setLogoA(data?.teams?.a?.logo ?? "");
       setLogoB(data?.teams?.b?.logo ?? "");
 
-      // FOULS
       setFoulsA(data?.fouls?.a ?? 0);
       setFoulsB(data?.fouls?.b ?? 0);
 
-      // COLORS
       setColorA(data?.teams?.a?.color ?? "");
       setColorB(data?.teams?.b?.color ?? "");
 
-      // PERIOD
       setPeriod(data?.period ?? "2nd HALF");
     });
 
@@ -88,6 +82,7 @@ export default function OverlayPage() {
 
   return (
     <div className="scoreboard-wrapper">
+
       <div className="scoreboard">
 
         {/* TIMER */}
@@ -99,68 +94,54 @@ export default function OverlayPage() {
         </div>
 
         {/* TEAMS */}
-        <div className="teams">
+<div className="teams">
 
-          {/* TEAM A */}
-          <div
-            className="team-block team-block-a"
-            style={{ background: colorA }}
-          >
-            {logoA && <img src={logoA} className="logo" />}
+  {/* TEAM A */}
+  <div className="team-block-a">
+    <img src={logoA} className="logo" />
+    <div className="teamName">{teamA}</div>
+  </div>
 
-            <div className="teams">{teamA}</div>
 
-            <div className="score">{scoreA}</div>
 
-            <Fouls value={foulsA} />
-          </div>
+  <div className="divider-container">
+     <div className="score score-left" id="score-a">{scoreA}</div>
+<div className="divider">-</div>
+<div className="score score-right" id="score-b">{scoreB}</div>
+  </div>
 
-          {/* DIVIDER */}
-          <div className="divider-container">
-            <div className="divider">-</div>
-          </div>
 
-          {/* TEAM B */}
-          <div
-            className="team-block team-block-b"
-            style={{ background: colorB }}
-          >
-            <div className="score">{scoreB}</div>
 
-            <div className="team-block-b-inner">
-              <div className="teams">{teamB}</div>
-              {logoB && <img src={logoB} className="logo" />}
-            </div>
+  {/* TEAM B */}
+  <div className="team-block-b">
+    <div className="teamName">{teamB}</div>
+    <img src={logoB} className="logo" />
+  </div>
 
-            <Fouls value={foulsB} />
-          </div>
-
-        </div>
+</div>
       </div>
 
-      {/* OPTIONAL EXTENSION AREA */}
+      {/* EXTENSION (MATCHES ORIGINAL IDS) */}
       <div className="scoreboard-extension">
-        <div className="fouls">
+
+        <div className="fouls" id="fouls-b">
           <Fouls value={foulsB} />
         </div>
 
-        <div className="fouls">
+        <div className="fouls" id="fouls-a">
           <Fouls value={foulsA} />
         </div>
+
       </div>
 
-      {/* GLOBAL CSS VARIABLES */}
+      {/* GLOBAL FIX */}
       <style jsx global>{`
-        :root {
-          --color-a: ${colorA || "#00bfff"};
-          --color-b: ${colorB || "#ff3b3b"};
-        }
-
         body {
           margin: 0;
           background: transparent;
         }
       `}</style>
+
     </div>
   );
 }

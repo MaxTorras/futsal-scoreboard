@@ -1,16 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  doc,
-  onSnapshot,
-  setDoc,
-  updateDoc,
-} from "firebase/firestore";
+import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import "../control/control.css";
 
 /* ─────────────────────────────
-   TYPES (minimal, clean)
+   TYPES
 ───────────────────────────── */
 type Team = {
   name: string;
@@ -42,8 +38,8 @@ const defaultState: Scoreboard = {
   fouls: { a: 0, b: 0 },
   period: "2nd HALF",
   teams: {
-    a: { name: "HOME", color: "#00bfff", logo: "" },
-    b: { name: "AWAY", color: "#ff3b3b", logo: "" },
+    a: { name: "HOME", color: "#781030", logo: "" },
+    b: { name: "AWAY", color: "#ff0000", logo: "" },
   },
   timer: {
     duration: 1200,
@@ -62,7 +58,7 @@ export default function ControlPage() {
   const ref = doc(db, "scoreboard", "main");
 
   /* ===========================
-     LIVE SYNC FROM FIRESTORE
+     FIRESTORE SYNC
   =========================== */
   useEffect(() => {
     const unsub = onSnapshot(ref, (snap) => {
@@ -74,45 +70,56 @@ export default function ControlPage() {
     return () => unsub();
   }, []);
 
-  /* ===========================
-     UPDATE HELPERS
-  =========================== */
   const push = async (patch: Partial<Scoreboard>) => {
     await setDoc(ref, patch, { merge: true });
   };
 
+  /* ===========================
+     SCORE
+  =========================== */
   const updateScore = (team: "a" | "b", val: number) => {
-    const next = {
-      ...state,
+    push({
       score: {
         ...state.score,
         [team]: Math.max(0, state.score[team] + val),
       },
-    };
-
-    push({ score: next.score });
+    });
   };
 
   const resetScore = () => push({ score: { a: 0, b: 0 } });
 
+  /* ===========================
+     FOULS
+  =========================== */
   const updateFouls = (team: "a" | "b", val: number) => {
-    const next = {
-      ...state,
+    push({
       fouls: {
         ...state.fouls,
         [team]: Math.min(5, Math.max(0, state.fouls[team] + val)),
       },
-    };
-
-    push({ fouls: next.fouls });
+    });
   };
 
   const resetFouls = () => push({ fouls: { a: 0, b: 0 } });
 
   /* ===========================
-     TIMER LOGIC (Firestore-safe)
+     TIMER
   =========================== */
-  const startTimer = () => {
+  const setTime = (sec: number) => {
+    const safe = Math.max(0, sec);
+
+    push({
+      timer: {
+        ...state.timer,
+        duration: safe,
+        remaining: safe,
+        running: false,
+        lastUpdate: Date.now(),
+      },
+    });
+  };
+
+  const startTimer = () =>
     push({
       timer: {
         ...state.timer,
@@ -120,7 +127,6 @@ export default function ControlPage() {
         lastUpdate: Date.now(),
       },
     });
-  };
 
   const pauseTimer = () => {
     const now = Date.now();
@@ -135,7 +141,7 @@ export default function ControlPage() {
     });
   };
 
-  const resetTimer = () => {
+  const resetTimer = () =>
     push({
       timer: {
         ...state.timer,
@@ -144,134 +150,171 @@ export default function ControlPage() {
         lastUpdate: Date.now(),
       },
     });
-  };
-
-  const setTime = (sec: number) => {
-    push({
-      timer: {
-        ...state.timer,
-        duration: sec,
-        remaining: sec,
-        running: false,
-        lastUpdate: Date.now(),
-      },
-    });
-  };
 
   /* ===========================
-     TEAM UPDATE
+     TEAM
   =========================== */
   const updateTeam = (team: "a" | "b", field: keyof Team, value: string) => {
-    const updated = {
-      ...state.teams[team],
-      [field]: value,
-    };
-
     push({
       teams: {
         ...state.teams,
-        [team]: updated,
+        [team]: {
+          ...state.teams[team],
+          [field]: value,
+        },
       },
     });
   };
-
-  /* ===========================
-     PERIOD
-  =========================== */
-  const setPeriod = (value: string) => push({ period: value });
 
   /* ===========================
      RENDER
   =========================== */
   return (
-    <div style={{ padding: 20, color: "white", fontFamily: "Arial" }}>
-      <h2>🏟 Scoreboard Control</h2>
-
-      {/* SCORE */}
-      <h3>Score</h3>
-      <button onClick={() => updateScore("a", 1)}>Home +</button>
-      <button onClick={() => updateScore("a", -1)}>Home -</button>
-      <button onClick={() => updateScore("b", 1)}>Away +</button>
-      <button onClick={() => updateScore("b", -1)}>Away -</button>
-      <button onClick={resetScore}>Reset</button>
-
-      <hr />
-
-      {/* FOULS */}
-      <h3>Fouls</h3>
-      <button onClick={() => updateFouls("a", 1)}>Home +</button>
-      <button onClick={() => updateFouls("a", -1)}>Home -</button>
-      <button onClick={() => updateFouls("b", 1)}>Away +</button>
-      <button onClick={() => updateFouls("b", -1)}>Away -</button>
-      <button onClick={resetFouls}>Reset</button>
-
-      <hr />
+    <div className="control">
 
       {/* TIMER */}
-      <h3>Timer</h3>
-      <button onClick={() => setTime(1200)}>20:00</button>
-      <button onClick={() => setTime(600)}>10:00</button>
-      <button onClick={() => setTime(300)}>5:00</button>
+      <div className="timer-control center-text section">
+        TIMER CONTROL
 
-      <br />
+        <div id="timeDisplay">
+          {Math.floor(state.timer.remaining / 60)}:
+          {(state.timer.remaining % 60).toString().padStart(2, "0")}
+        </div>
 
-      <button onClick={startTimer}>Start</button>
-      <button onClick={pauseTimer}>Pause</button>
-      <button onClick={resetTimer}>Reset</button>
+        <div id="timer-adjuster">
+          <div className="center-text">Timer Adjuster</div>
 
-      <hr />
+          <button className="button" onClick={() => setTime(state.timer.remaining - 10)}>-10s</button>
+          <button className="button" onClick={() => setTime(state.timer.remaining - 1)}>-1s</button>
+          <button className="button" onClick={() => setTime(state.timer.remaining + 1)}>+1s</button>
+          <button className="button" onClick={() => setTime(state.timer.remaining + 10)}>+10s</button>
 
-      {/* TEAMS */}
-      <h3>Teams</h3>
+          <button className="button" onClick={() => setTime(1200)}>20:00</button>
+          <button className="button" onClick={() => setTime(600)}>10:00</button>
+          <button className="button" onClick={() => setTime(300)}>05:00</button>
+        </div>
 
-      <input
-        value={state.teams.a.name}
-        onChange={(e) => updateTeam("a", "name", e.target.value)}
-        placeholder="Home name"
-      />
+        <div id="timer-set">
+          <div className="center-text">Timer Control</div>
+          <button className="button" onClick={startTimer}>START</button>
+          <button className="button" onClick={pauseTimer}>PAUSE</button>
+          <button className="button" onClick={resetTimer}>RESET TIMER</button>
+        </div>
+      </div>
 
-      <input
-        value={state.teams.b.name}
-        onChange={(e) => updateTeam("b", "name", e.target.value)}
-        placeholder="Away name"
-      />
+      {/* SCORE */}
+      <div className="score-control center-text section">
+        SCORE CONTROL
 
-      <br />
+        <div id="home-team" className="panel">
+          <div>HOME TEAM</div>
+          <button className="button" onClick={() => updateScore("a", 1)}>+1</button>
+          <button className="button" onClick={() => updateScore("a", -1)}>-1</button>
+        </div>
 
-      <input
-        type="color"
-        value={state.teams.a.color}
-        onChange={(e) => updateTeam("a", "color", e.target.value)}
-      />
+        <div id="away-team" className="panel">
+          <div>AWAY TEAM</div>
+          <button className="button" onClick={() => updateScore("b", 1)}>+1</button>
+          <button className="button" onClick={() => updateScore("b", -1)}>-1</button>
+        </div>
 
-      <input
-        type="color"
-        value={state.teams.b.color}
-        onChange={(e) => updateTeam("b", "color", e.target.value)}
-      />
+        <button className="button" onClick={resetScore}>Reset Goals</button>
+      </div>
 
-      <br />
+      {/* FOULS */}
+      <div className="fouls-control center-text section">
+        FOULS CONTROL
 
-      <input
-        value={state.teams.a.logo}
-        onChange={(e) => updateTeam("a", "logo", e.target.value)}
-        placeholder="Home logo URL"
-      />
+        <div id="fouls-home" className="panel">
+          <div>Home Fouls</div>
+          <button className="button" onClick={() => updateFouls("a", 1)}>+1</button>
+          <button className="button" onClick={() => updateFouls("a", -1)}>-1</button>
+        </div>
 
-      <input
-        value={state.teams.b.logo}
-        onChange={(e) => updateTeam("b", "logo", e.target.value)}
-        placeholder="Away logo URL"
-      />
+        <div id="fouls-away" className="panel">
+          <div>Away Fouls</div>
+          <button className="button" onClick={() => updateFouls("b", 1)}>+1</button>
+          <button className="button" onClick={() => updateFouls("b", -1)}>-1</button>
+        </div>
 
-      <hr />
+        <button className="button" onClick={resetFouls}>Reset Fouls</button>
+      </div>
 
-      {/* PERIOD */}
-      <h3>Period</h3>
-      <button onClick={() => setPeriod("1st HALF")}>1st</button>
-      <button onClick={() => setPeriod("2nd HALF")}>2nd</button>
-      <button onClick={() => setPeriod("HALF TIME")}>HT</button>
-      <button onClick={() => setPeriod("FULL TIME")}>FT</button>
-    </div>
+{/* ───────── TEAMS ───────── */}
+<div className="section team-control">
+
+  <div className="title">TEAM CONTROL</div>
+
+  {/* NAMES */}
+  <input
+    value={state.teams.a.name}
+    onChange={(e) => updateTeam("a", "name", e.target.value)}
+  />
+
+  <input
+    value={state.teams.b.name}
+    onChange={(e) => updateTeam("b", "name", e.target.value)}
+  />
+
+  {/* COLORS */}
+  <input
+    type="color"
+    value={state.teams.a.color}
+    onChange={(e) => updateTeam("a", "color", e.target.value)}
+  />
+
+  <input
+    type="color"
+    value={state.teams.b.color}
+    onChange={(e) => updateTeam("b", "color", e.target.value)}
+  />
+
+  {/* LOGO UPLOAD A */}
+  <input
+    type="file"
+    accept="image/*"
+    onChange={(e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        updateTeam("a", "logo", ev.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }}
+  />
+
+  {/* LOGO UPLOAD B */}
+  <input
+    type="file"
+    accept="image/*"
+    onChange={(e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        updateTeam("b", "logo", ev.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }}
+  />
+
+  {/* SET BUTTON (IMPORTANT FIX) */}
+  <button
+    className="button"
+    onClick={() =>
+      push({
+        teams: state.teams,
+      })
+    }
+    style={{ gridColumn: "1 / -1" }}
+  >
+    SET TEAMS
+  </button>
+
+</div>
+</div>
   );
 }
