@@ -1,619 +1,277 @@
-// app\control\page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
-import { doc, setDoc, collection, getDocs } from "firebase/firestore";
+import { useEffect, useState } from "react";
+import {
+  doc,
+  onSnapshot,
+  setDoc,
+  updateDoc,
+} from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { CSSProperties } from "react";
-import { CLOUDINARY_URL, UPLOAD_PRESET } from "@/lib/cloudinary";
 
-/* ─────────────────────────────────────────
-   TYPES
-───────────────────────────────────────── */
-interface TeamInfo {
+/* ─────────────────────────────
+   TYPES (minimal, clean)
+───────────────────────────── */
+type Team = {
   name: string;
   color: string;
   logo: string;
-}
+};
 
-interface TimerState {
-  duration: number;
-  remaining: number;
-  running: boolean;
-  lastUpdate: number;
-}
-
-interface ScoreboardState {
-  teamA: string;
-  teamB: string;
-  scoreA: number;
-  scoreB: number;
-  foulsA: number;
-  foulsB: number;
-  period: string;
-  colorA: string;
-  colorB: string;
-  bgMain: string;
-  bgBlocks: string;
-  bgTimer: string;
-  textColor: string;
-  textMuted: string;
-  textAccent: string;
-  foulActive: string;
-  foulInactive: string;
-  teams: { a: TeamInfo; b: TeamInfo };
-  timer: TimerState;
-}
-
-/* ─────────────────────────────────────────
-   DEFAULT STATE
-───────────────────────────────────────── */
-const defaultState: ScoreboardState = {
-  teamA: "Team A",
-  teamB: "Team B",
-  scoreA: 0,
-  scoreB: 0,
-  foulsA: 0,
-  foulsB: 0,
-  period: "1st HALF",
-  colorA: "#7a1132",
-  colorB: "#bdff34",
-  bgMain: "#111111",
-  bgBlocks: "#1a1a1a",
-  bgTimer: "#1a1a1a",
-  textColor: "#ffffff",
-  textMuted: "#aaaaaa",
-  textAccent: "#ffffff",
-  foulActive: "#ffffff",
-  foulInactive: "#333333",
+type Scoreboard = {
+  score: { a: number; b: number };
+  fouls: { a: number; b: number };
+  timer: {
+    duration: number;
+    remaining: number;
+    running: boolean;
+    lastUpdate: number;
+  };
   teams: {
-    a: { name: "Team A", color: "#7a1132", logo: "" },
-    b: { name: "Team B", color: "#bdff34", logo: "" },
+    a: Team;
+    b: Team;
+  };
+  period: string;
+};
+
+/* ─────────────────────────────
+   DEFAULT STATE
+───────────────────────────── */
+const defaultState: Scoreboard = {
+  score: { a: 0, b: 0 },
+  fouls: { a: 0, b: 0 },
+  period: "2nd HALF",
+  teams: {
+    a: { name: "HOME", color: "#00bfff", logo: "" },
+    b: { name: "AWAY", color: "#ff3b3b", logo: "" },
   },
   timer: {
     duration: 1200,
     remaining: 1200,
     running: false,
-    lastUpdate: 0,
+    lastUpdate: Date.now(),
   },
 };
 
-/* ─────────────────────────────────────────
-   CONSTANTS
-───────────────────────────────────────── */
-const PERIODS = ["1st HALF", "2nd HALF", "HALF TIME", "FULL TIME"];
-
-/* ─────────────────────────────────────────
+/* ─────────────────────────────
    COMPONENT
-───────────────────────────────────────── */
+───────────────────────────── */
 export default function ControlPage() {
-  const [state, setState] = useState<ScoreboardState>(defaultState);
-  const [tab, setTab] = useState<"control" | "design">("control");
-  const [halfMinutes, setHalfMinutes] = useState(20);
+  const [state, setState] = useState<Scoreboard>(defaultState);
 
-  const [presets, setPresets] = useState<any[]>([]);
-  const [selectedPreset, setSelectedPreset] = useState<string>("");
-  const [presetTarget, setPresetTarget] = useState<"A" | "B">("A");
+  const ref = doc(db, "scoreboard", "main");
 
-  const [logoPreview, setLogoPreview] = useState<{
-  a: string;
-  b: string;
-}>({
-  a: "",
-  b: "",
-});
-  /* ── LOAD PRESETS ── */
-  const loadPresets = async () => {
-    const snap = await getDocs(collection(db, "teamPresets"));
-   setPresets(
-  snap.docs.map((d) => ({
-    id: d.id,
-    team: d.data().team,
-  }))
-);
-  };
-
+  /* ===========================
+     LIVE SYNC FROM FIRESTORE
+  =========================== */
   useEffect(() => {
-    loadPresets();
+    const unsub = onSnapshot(ref, (snap) => {
+      if (snap.exists()) {
+        setState(snap.data() as Scoreboard);
+      }
+    });
+
+    return () => unsub();
   }, []);
 
-  /* ── UPLOAD LOGO ── */
-const uploadLogo = async (file: File) => {
-  const formData = new FormData();
+  /* ===========================
+     UPDATE HELPERS
+  =========================== */
+  const push = async (patch: Partial<Scoreboard>) => {
+    await setDoc(ref, patch, { merge: true });
+  };
 
-  formData.append("file", file);
-  formData.append("upload_preset", UPLOAD_PRESET);
-
-  const res = await fetch(CLOUDINARY_URL, {
-    method: "POST",
-    body: formData,
-  });
-
-  const data = await res.json();
-
-  return data.secure_url;
-};
-
-  /* ── SAVE PRESET (single team-based) ── */
-const savePreset = async () => {
-  const team =
-    presetTarget === "A" ? state.teams.a : state.teams.b;
-
-  const id = `${team.name
-    .toLowerCase()
-    .replace(/\s+/g, "-")}-${Date.now()}`;
-
-  await setDoc(doc(db, "teamPresets", id), {
-    team: {
-      name: team.name,
-      color: team.color,
-      logo: team.logo,
-    },
-  });
-
-  loadPresets();
-};
-
-  /* ── APPLY PRESET ── */
-const applyPreset = (preset: any) => {
-  const target = presetTarget;
-
-  update({
-    ...state,
-    teams: {
-      ...state.teams,
-      [target.toLowerCase()]: preset.team,
-    },
-  });
-};
-
-  /* ── FIRESTORE SYNC ── */
-  const send = (newState: ScoreboardState) => {
-    const payload = {
-      score: { a: newState.scoreA, b: newState.scoreB },
-      fouls: { a: newState.foulsA, b: newState.foulsB },
-      period: newState.period,
-      teams: newState.teams,
-      theme: {
-        bgMain: newState.bgMain,
-        bgBlocks: newState.bgBlocks,
-        bgTimer: newState.bgTimer,
-        textColor: newState.textColor,
-        textMuted: newState.textMuted,
-        textAccent: newState.textAccent,
-        foulActive: newState.foulActive,
-        foulInactive: newState.foulInactive,
+  const updateScore = (team: "a" | "b", val: number) => {
+    const next = {
+      ...state,
+      score: {
+        ...state.score,
+        [team]: Math.max(0, state.score[team] + val),
       },
-      timer: newState.timer,
     };
 
-    setDoc(doc(db, "scoreboard", "main"), payload, { merge: true });
+    push({ score: next.score });
   };
 
-  const update = (newState: ScoreboardState) => {
-    setState(newState);
-    send(newState);
+  const resetScore = () => push({ score: { a: 0, b: 0 } });
+
+  const updateFouls = (team: "a" | "b", val: number) => {
+    const next = {
+      ...state,
+      fouls: {
+        ...state.fouls,
+        [team]: Math.min(5, Math.max(0, state.fouls[team] + val)),
+      },
+    };
+
+    push({ fouls: next.fouls });
   };
 
-  /* ── SCORE ── */
-  const changeScore = (team: "A" | "B", val: number) =>
-    update({
-      ...state,
-      scoreA: team === "A" ? Math.max(0, state.scoreA + val) : state.scoreA,
-      scoreB: team === "B" ? Math.max(0, state.scoreB + val) : state.scoreB,
-    });
+  const resetFouls = () => push({ fouls: { a: 0, b: 0 } });
 
-  const resetScore = () => update({ ...state, scoreA: 0, scoreB: 0 });
-
-  /* ── FOULS ── */
-  const changeFoul = (team: "A" | "B", val: number) =>
-    update({
-      ...state,
-      foulsA: team === "A"
-        ? Math.min(5, Math.max(0, state.foulsA + val))
-        : state.foulsA,
-      foulsB: team === "B"
-        ? Math.min(5, Math.max(0, state.foulsB + val))
-        : state.foulsB,
-    });
-
-  const resetFouls = () => update({ ...state, foulsA: 0, foulsB: 0 });
-
-  /* ── PERIOD ── */
-  const shiftPeriod = (dir: 1 | -1) => {
-    const i = PERIODS.indexOf(state.period);
-    const next = PERIODS[(i + dir + PERIODS.length) % PERIODS.length];
-    update({ ...state, period: next });
-  };
-
-  /* ── TIMER ── */
-  const setMatch = () => {
-    const duration = halfMinutes * 60;
-    update({
-      ...state,
+  /* ===========================
+     TIMER LOGIC (Firestore-safe)
+  =========================== */
+  const startTimer = () => {
+    push({
       timer: {
-        duration,
-        remaining: duration,
+        ...state.timer,
+        running: true,
+        lastUpdate: Date.now(),
+      },
+    });
+  };
+
+  const pauseTimer = () => {
+    const now = Date.now();
+    const elapsed = Math.floor((now - state.timer.lastUpdate) / 1000);
+
+    push({
+      timer: {
+        ...state.timer,
+        remaining: Math.max(state.timer.remaining - elapsed, 0),
+        running: false,
+      },
+    });
+  };
+
+  const resetTimer = () => {
+    push({
+      timer: {
+        ...state.timer,
+        remaining: state.timer.duration,
         running: false,
         lastUpdate: Date.now(),
       },
     });
   };
 
-  const timerAction = (action: "start" | "pause" | "reset") => {
-    const now = Date.now();
-    let t = { ...state.timer };
-
-    if (action === "start") {
-      t.running = true;
-      t.lastUpdate = now;
-    } else if (action === "pause") {
-      const elapsed = Math.floor((now - t.lastUpdate) / 1000);
-      t.remaining = Math.max(t.remaining - elapsed, 0);
-      t.running = false;
-    } else if (action === "reset") {
-      t = {
-        duration: t.duration,
-        remaining: t.duration,
+  const setTime = (sec: number) => {
+    push({
+      timer: {
+        ...state.timer,
+        duration: sec,
+        remaining: sec,
         running: false,
-        lastUpdate: now,
-      };
-    }
-
-    update({ ...state, timer: t });
+        lastUpdate: Date.now(),
+      },
+    });
   };
 
-  /* ─────────────────────────────────────────
-     DESIGN HELPERS
-  ───────────────────────────────────────── */
-  const setTheme = (key: keyof ScoreboardState, value: string) =>
-    update({ ...state, [key]: value });
+  /* ===========================
+     TEAM UPDATE
+  =========================== */
+  const updateTeam = (team: "a" | "b", field: keyof Team, value: string) => {
+    const updated = {
+      ...state.teams[team],
+      [field]: value,
+    };
 
-  /* ─────────────────────────────────────────
-     STYLES
-  ───────────────────────────────────────── */
-  const s: Record<string, CSSProperties> = {
-    body: {
-      margin: 0,
-      padding: 12,
-      fontFamily: "Segoe UI, Arial, sans-serif",
-      background: "#0f0f0f",
-      color: "white",
-      minHeight: "100vh",
-    },
-    tabs: { display: "flex", gap: 8, marginBottom: 12 },
-    grid: {
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-      gap: 12,
-    },
-    box: {
-      background: "#1a1a1a",
-      padding: 12,
-      borderRadius: 10,
-      display: "flex",
-      flexDirection: "column",
-      gap: 6,
-    },
-    btn: {
-      padding: "10px 12px",
-      borderRadius: 8,
-      border: "none",
-      background: "#333",
-      color: "white",
-      cursor: "pointer",
-      fontSize: 14,
-    },
-    input: {
-      padding: 10,
-      borderRadius: 6,
-      border: "none",
-      width: "100%",
-      fontSize: 14,
-    },
-    colorRow: {
-      display: "flex",
-      alignItems: "center",
-      gap: 8,
-    },
+    push({
+      teams: {
+        ...state.teams,
+        [team]: updated,
+      },
+    });
   };
 
-  const tabBtn = (active: boolean): CSSProperties => ({
-    padding: "10px 14px",
-    borderRadius: 8,
-    border: "none",
-    cursor: "pointer",
-    background: active ? "#555" : "#222",
-    color: "white",
-  });
+  /* ===========================
+     PERIOD
+  =========================== */
+  const setPeriod = (value: string) => push({ period: value });
 
-  /* ─────────────────────────────────────────
+  /* ===========================
      RENDER
-  ───────────────────────────────────────── */
+  =========================== */
   return (
-    <div style={s.body}>
-      <h2>🏟 Pro Control Panel</h2>
+    <div style={{ padding: 20, color: "white", fontFamily: "Arial" }}>
+      <h2>🏟 Scoreboard Control</h2>
 
-      <div style={s.tabs}>
-        <button style={tabBtn(tab === "control")} onClick={() => setTab("control")}>
-          Control
-        </button>
-        <button style={tabBtn(tab === "design")} onClick={() => setTab("design")}>
-          Design
-        </button>
-      </div>
+      {/* SCORE */}
+      <h3>Score</h3>
+      <button onClick={() => updateScore("a", 1)}>Home +</button>
+      <button onClick={() => updateScore("a", -1)}>Home -</button>
+      <button onClick={() => updateScore("b", 1)}>Away +</button>
+      <button onClick={() => updateScore("b", -1)}>Away -</button>
+      <button onClick={resetScore}>Reset</button>
 
-      <div style={s.grid}>
-        {/* CONTROL */}
-        {tab === "control" && (
-          <>
-            <div style={s.box}>
-              <h3>Score</h3>
-              <button style={s.btn} onClick={() => changeScore("A", 1)}>+ A</button>
-              <button style={s.btn} onClick={() => changeScore("A", -1)}>− A</button>
-              <button style={s.btn} onClick={() => changeScore("B", 1)}>+ B</button>
-              <button style={s.btn} onClick={() => changeScore("B", -1)}>− B</button>
-              <button style={s.btn} onClick={resetScore}>Reset</button>
-            </div>
+      <hr />
 
-            <div style={s.box}>
-              <h3>Fouls</h3>
-              <button style={s.btn} onClick={() => changeFoul("A", 1)}>+ A</button>
-              <button style={s.btn} onClick={() => changeFoul("A", -1)}>− A</button>
-              <button style={s.btn} onClick={() => changeFoul("B", 1)}>+ B</button>
-              <button style={s.btn} onClick={() => changeFoul("B", -1)}>− B</button>
-              <button style={s.btn} onClick={resetFouls}>Reset</button>
-            </div>
+      {/* FOULS */}
+      <h3>Fouls</h3>
+      <button onClick={() => updateFouls("a", 1)}>Home +</button>
+      <button onClick={() => updateFouls("a", -1)}>Home -</button>
+      <button onClick={() => updateFouls("b", 1)}>Away +</button>
+      <button onClick={() => updateFouls("b", -1)}>Away -</button>
+      <button onClick={resetFouls}>Reset</button>
 
-            <div style={s.box}>
-              <h3>Period</h3>
-              <div>{state.period}</div>
-              <button style={s.btn} onClick={() => shiftPeriod(1)}>Next</button>
-              <button style={s.btn} onClick={() => shiftPeriod(-1)}>Prev</button>
-            </div>
+      <hr />
 
-            <div style={s.box}>
-              <h3>Timer</h3>
-              <input
-                style={s.input}
-                type="number"
-                value={halfMinutes}
-                onChange={(e) => setHalfMinutes(Number(e.target.value))}
-              />
-              <button style={s.btn} onClick={setMatch}>Set</button>
-              <button style={s.btn} onClick={() => timerAction("start")}>Start</button>
-              <button style={s.btn} onClick={() => timerAction("pause")}>Pause</button>
-              <button style={s.btn} onClick={() => timerAction("reset")}>Reset</button>
-            </div>
-          </>
-        )}
+      {/* TIMER */}
+      <h3>Timer</h3>
+      <button onClick={() => setTime(1200)}>20:00</button>
+      <button onClick={() => setTime(600)}>10:00</button>
+      <button onClick={() => setTime(300)}>5:00</button>
 
-        {/* DESIGN */}
-        {tab === "design" && (
-          <>
-            <div style={s.box}>
-  <h3>Team Presets</h3>
+      <br />
 
-  {/* TARGET SELECTOR */}
-  <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-    <button
-      style={{ ...s.btn, background: presetTarget === "A" ? "#555" : "#333" }}
-      onClick={() => setPresetTarget("A")}
-    >
-      Apply to A
-    </button>
+      <button onClick={startTimer}>Start</button>
+      <button onClick={pauseTimer}>Pause</button>
+      <button onClick={resetTimer}>Reset</button>
 
-    <button
-      style={{ ...s.btn, background: presetTarget === "B" ? "#555" : "#333" }}
-      onClick={() => setPresetTarget("B")}
-    >
-      Apply to B
-    </button>
-  </div>
+      <hr />
 
-  {/* SELECT */}
-  <select
-    style={s.input}
-    value={selectedPreset}
-    onChange={(e) => {
-      setSelectedPreset(e.target.value);
-      const preset = presets.find((p) => p.id === e.target.value);
-      if (preset) applyPreset(preset);
-    }}
-  >
-    <option value="">Select preset</option>
-    {presets.map((p) => (
-      <option key={p.id} value={p.id}>
-        {p.team.name}
-      </option>
-    ))}
-  </select>
+      {/* TEAMS */}
+      <h3>Teams</h3>
 
-  <button style={s.btn} onClick={savePreset}>
-    Save selected team preset
-  </button>
-</div>
+      <input
+        value={state.teams.a.name}
+        onChange={(e) => updateTeam("a", "name", e.target.value)}
+        placeholder="Home name"
+      />
 
-            <div style={s.box}>
-              <h3>Team A</h3>
-              <input
-                style={s.input}
-                value={state.teams.a.name}
-onChange={(e) =>
-  update({
-    ...state,
-    teams: {
-      ...state.teams,
-      a: { ...state.teams.a, name: e.target.value },
-    },
-  })
-}
-              />
-              <input
-                type="file"
-                accept="image/*"
-                onChange={async (e) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
+      <input
+        value={state.teams.b.name}
+        onChange={(e) => updateTeam("b", "name", e.target.value)}
+        placeholder="Away name"
+      />
 
-  // ⚡ instant local preview
-  const previewUrl = URL.createObjectURL(file);
+      <br />
 
-  setLogoPreview((prev) => ({
-    ...prev,
-    a: previewUrl,
-  }));
+      <input
+        type="color"
+        value={state.teams.a.color}
+        onChange={(e) => updateTeam("a", "color", e.target.value)}
+      />
 
-  // ☁️ upload to Cloudinary
-  const url = await uploadLogo(file);
+      <input
+        type="color"
+        value={state.teams.b.color}
+        onChange={(e) => updateTeam("b", "color", e.target.value)}
+      />
 
-  update({
-    ...state,
-    teams: {
-      ...state.teams,
-      a: { ...state.teams.a, logo: url },
-    },
-  });
-}}
-              />
-              {(logoPreview.a || state.teams.a.logo) && (
-  <div style={{ marginTop: 8 }}>
-    <img
-      src={logoPreview.a || state.teams.a.logo}
-      style={{
-        width: 90,
-        height: 90,
-        objectFit: "cover",
-        borderRadius: 10,
-        border: "1px solid #333",
-        background: "#000",
-      }}
-    />
-  </div>
-)}
-            </div>
+      <br />
 
-            <div style={s.box}>
-              <h3>Team B</h3>
-              <input
-                style={s.input}
-                value={state.teams.b.name}
-onChange={(e) =>
-  update({
-    ...state,
-    teams: {
-      ...state.teams,
-      b: { ...state.teams.b, name: e.target.value },
-    },
-  })
-}
-              />
-              <input
-                type="file"
-                accept="image/*"
-                onChange={async (e) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
+      <input
+        value={state.teams.a.logo}
+        onChange={(e) => updateTeam("a", "logo", e.target.value)}
+        placeholder="Home logo URL"
+      />
 
-  const previewUrl = URL.createObjectURL(file);
+      <input
+        value={state.teams.b.logo}
+        onChange={(e) => updateTeam("b", "logo", e.target.value)}
+        placeholder="Away logo URL"
+      />
 
-  setLogoPreview((prev) => ({
-    ...prev,
-    b: previewUrl,
-  }));
+      <hr />
 
-  const url = await uploadLogo(file);
-
-  update({
-    ...state,
-    teams: {
-      ...state.teams,
-      b: { ...state.teams.b, logo: url },
-    },
-  });
-}}
-              />
-              {(logoPreview.b || state.teams.b.logo) && (
-  <div style={{ marginTop: 8 }}>
-    <img
-      src={logoPreview.b || state.teams.b.logo}
-      style={{
-        width: 90,
-        height: 90,
-        objectFit: "cover",
-        borderRadius: 10,
-        border: "1px solid #333",
-        background: "#000",
-      }}
-    />
-  </div>
-)}
-            </div>
-
-            <div style={s.box}>
-              <h3>Colors</h3>
-
-              <div style={s.colorRow}>
-                <input
-                
-                  type="color"
-                  value={state.teams.a.color}
-onChange={(e) =>
-  update({
-    ...state,
-    teams: {
-      ...state.teams,
-      a: { ...state.teams.a, color: e.target.value },
-    },
-  })
-}
-                />
-                A
-              </div>
-              <div style={s.colorRow}>
-                <input
-                  type="color"
-                  value={state.teams.b.color}
-onChange={(e) =>
-  update({
-    ...state,
-    teams: {
-      ...state.teams,
-      b: { ...state.teams.b, color: e.target.value },
-    },
-  })
-}
-                />
-                B
-              </div>
-            </div>
-
-            <div style={s.box}>
-              <h3>Theme</h3>
-
-              {(
-                [
-                  ["bgMain", "Main"],
-                  ["bgBlocks", "Blocks"],
-                  ["bgTimer", "Timer"],
-                  ["textColor", "Text"],
-                  ["foulActive", "Foul active"],
-                  ["foulInactive", "Foul inactive"],
-                ] as [keyof ScoreboardState, string][]
-              ).map(([key, label]) => (
-                <div key={key} style={s.colorRow}>
-                  <input
-                    type="color"
-                    value={state[key] as string}
-                    onChange={(e) => setTheme(key, e.target.value)}
-                  />
-                  {label}
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
+      {/* PERIOD */}
+      <h3>Period</h3>
+      <button onClick={() => setPeriod("1st HALF")}>1st</button>
+      <button onClick={() => setPeriod("2nd HALF")}>2nd</button>
+      <button onClick={() => setPeriod("HALF TIME")}>HT</button>
+      <button onClick={() => setPeriod("FULL TIME")}>FT</button>
     </div>
   );
 }
