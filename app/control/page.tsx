@@ -1,3 +1,4 @@
+// app\control\page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -45,7 +46,7 @@ const defaultState: Scoreboard = {
     duration: 1200,
     remaining: 1200,
     running: false,
-    lastUpdate: Date.now(),
+    lastUpdate: Date.now(), // FIX: initialise with real timestamp, not 0
   },
 };
 
@@ -56,6 +57,15 @@ export default function ControlPage() {
   const [state, setState] = useState<Scoreboard>(defaultState);
 
   const ref = doc(db, "scoreboard", "main");
+
+  const update = async (patch: any) => {
+    await setDoc(ref, patch, { merge: true });
+  };
+
+  // FIX: single mount effect — no redundant local-state patch
+  useEffect(() => {
+    setDoc(ref, defaultState, { merge: true });
+  }, []);
 
   /* ===========================
      FIRESTORE SYNC
@@ -70,37 +80,33 @@ export default function ControlPage() {
     return () => unsub();
   }, []);
 
-  const push = async (patch: Partial<Scoreboard>) => {
-    await setDoc(ref, patch, { merge: true });
-  };
-
   /* ===========================
      SCORE
   =========================== */
   const updateScore = (team: "a" | "b", val: number) => {
-    push({
-      score: {
-        ...state.score,
-        [team]: Math.max(0, state.score[team] + val),
-      },
+    update({
+      [`score.${team}`]: Math.max(0, state.score[team] + val),
     });
   };
 
-  const resetScore = () => push({ score: { a: 0, b: 0 } });
+  const resetScore = () =>
+    update({
+      score: { a: 0, b: 0 },
+    });
 
   /* ===========================
      FOULS
   =========================== */
   const updateFouls = (team: "a" | "b", val: number) => {
-    push({
-      fouls: {
-        ...state.fouls,
-        [team]: Math.min(5, Math.max(0, state.fouls[team] + val)),
-      },
+    update({
+      [`fouls.${team}`]: Math.min(5, Math.max(0, state.fouls[team] + val)),
     });
   };
 
-  const resetFouls = () => push({ fouls: { a: 0, b: 0 } });
+  const resetFouls = () =>
+    update({
+      fouls: { a: 0, b: 0 },
+    });
 
   /* ===========================
      TIMER
@@ -108,61 +114,49 @@ export default function ControlPage() {
   const setTime = (sec: number) => {
     const safe = Math.max(0, sec);
 
-    push({
-      timer: {
-        ...state.timer,
-        duration: safe,
-        remaining: safe,
-        running: false,
-        lastUpdate: Date.now(),
-      },
+    update({
+      "timer.duration": safe,
+      "timer.remaining": safe,
+      "timer.running": false,
+      "timer.lastUpdate": Date.now(),
     });
   };
 
   const startTimer = () =>
-    push({
-      timer: {
-        ...state.timer,
-        running: true,
-        lastUpdate: Date.now(),
-      },
+    update({
+      "timer.running": true,
+      "timer.lastUpdate": Date.now(),
     });
 
+  // FIX: read live remaining from Firestore snapshot (state is synced via onSnapshot)
+  // so state here is already up-to-date; but we re-calculate elapsed client-side
+  // to avoid double-subtracting elapsed time that the overlay already handles.
   const pauseTimer = () => {
     const now = Date.now();
-    const elapsed = Math.floor((now - state.timer.lastUpdate) / 1000);
+    const elapsed = state.timer.running
+      ? Math.floor((now - state.timer.lastUpdate) / 1000)
+      : 0;
 
-    push({
-      timer: {
-        ...state.timer,
-        remaining: Math.max(state.timer.remaining - elapsed, 0),
-        running: false,
-      },
+    update({
+      "timer.remaining": Math.max(state.timer.remaining - elapsed, 0),
+      "timer.running": false,
+      "timer.lastUpdate": now,
     });
   };
 
   const resetTimer = () =>
-    push({
-      timer: {
-        ...state.timer,
-        remaining: state.timer.duration,
-        running: false,
-        lastUpdate: Date.now(),
-      },
+    update({
+      "timer.remaining": state.timer.duration,
+      "timer.running": false,
+      "timer.lastUpdate": Date.now(),
     });
 
   /* ===========================
      TEAM
   =========================== */
   const updateTeam = (team: "a" | "b", field: keyof Team, value: string) => {
-    push({
-      teams: {
-        ...state.teams,
-        [team]: {
-          ...state.teams[team],
-          [field]: value,
-        },
-      },
+    update({
+      [`teams.${team}.${field}`]: value,
     });
   };
 
@@ -218,7 +212,8 @@ export default function ControlPage() {
           <button className="button" onClick={() => updateScore("b", -1)}>-1</button>
         </div>
 
-        <button className="button" onClick={resetScore}>Reset Goals</button>
+        {/* FIX: added id="resetGoals" so CSS grid-column rule applies */}
+        <button id="resetGoals" className="button" onClick={resetScore}>Reset Goals</button>
       </div>
 
       {/* FOULS */}
@@ -237,84 +232,80 @@ export default function ControlPage() {
           <button className="button" onClick={() => updateFouls("b", -1)}>-1</button>
         </div>
 
-        <button className="button" onClick={resetFouls}>Reset Fouls</button>
+        {/* FIX: added id="resetFouls" so CSS grid-column rule applies */}
+        <button id="resetFouls" className="button" onClick={resetFouls}>Reset Fouls</button>
       </div>
 
-{/* ───────── TEAMS ───────── */}
-<div className="section team-control">
+      {/* ───────── TEAMS ───────── */}
+      <div className="section team-control">
 
-  <div className="title">TEAM CONTROL</div>
+        <div className="title">TEAM CONTROL</div>
 
-  {/* NAMES */}
-  <input
-    value={state.teams.a.name}
-    onChange={(e) => updateTeam("a", "name", e.target.value)}
-  />
+        {/* NAMES */}
+        <input
+          value={state.teams.a.name}
+          onChange={(e) => updateTeam("a", "name", e.target.value)}
+        />
 
-  <input
-    value={state.teams.b.name}
-    onChange={(e) => updateTeam("b", "name", e.target.value)}
-  />
+        <input
+          value={state.teams.b.name}
+          onChange={(e) => updateTeam("b", "name", e.target.value)}
+        />
 
-  {/* COLORS */}
-  <input
-    type="color"
-    value={state.teams.a.color}
-    onChange={(e) => updateTeam("a", "color", e.target.value)}
-  />
+        {/* COLORS */}
+        <input
+          type="color"
+          value={state.teams.a.color}
+          onChange={(e) => updateTeam("a", "color", e.target.value)}
+        />
 
-  <input
-    type="color"
-    value={state.teams.b.color}
-    onChange={(e) => updateTeam("b", "color", e.target.value)}
-  />
+        <input
+          type="color"
+          value={state.teams.b.color}
+          onChange={(e) => updateTeam("b", "color", e.target.value)}
+        />
 
-  {/* LOGO UPLOAD A */}
-  <input
-    type="file"
-    accept="image/*"
-    onChange={(e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
+        {/* LOGO UPLOAD A */}
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
 
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        updateTeam("a", "logo", ev.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }}
-  />
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+              updateTeam("a", "logo", ev.target?.result as string);
+            };
+            reader.readAsDataURL(file);
+          }}
+        />
 
-  {/* LOGO UPLOAD B */}
-  <input
-    type="file"
-    accept="image/*"
-    onChange={(e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
+        {/* LOGO UPLOAD B */}
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
 
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        updateTeam("b", "logo", ev.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }}
-  />
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+              updateTeam("b", "logo", ev.target?.result as string);
+            };
+            reader.readAsDataURL(file);
+          }}
+        />
 
-  {/* SET BUTTON (IMPORTANT FIX) */}
-  <button
-    className="button"
-    onClick={() =>
-      push({
-        teams: state.teams,
-      })
-    }
-    style={{ gridColumn: "1 / -1" }}
-  >
-    SET TEAMS
-  </button>
+        <button
+          className="button"
+          onClick={() => update({ teams: state.teams })}
+          style={{ gridColumn: "1 / -1" }}
+        >
+          SET TEAMS
+        </button>
 
-</div>
-</div>
+      </div>
+    </div>
   );
 }

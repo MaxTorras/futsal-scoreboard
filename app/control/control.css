@@ -1,3 +1,4 @@
+/* app\control\control.css */
 body {
   margin: 0;
   background: transparent;
@@ -10,7 +11,7 @@ body {
 }
 
 /* =========================
-   BUTTON (EXACT ORIGINAL)
+   BUTTON
 ========================= */
 .button {
   background-color: #1a1a1a;
@@ -33,7 +34,7 @@ body {
 }
 
 /* =========================
-   PANEL (EXACT ORIGINAL)
+   PANEL
 ========================= */
 .panel {
   background-color: #2a2a2a;
@@ -43,7 +44,7 @@ body {
 }
 
 /* =========================
-   SECTION (EXACT ORIGINAL)
+   SECTION
 ========================= */
 .section {
   background-color: #1a1a1a;
@@ -73,7 +74,6 @@ body {
   padding: 5px;
 }
 
-/* EXACT GRID */
 #timer-adjuster {
   background-color: #242424;
   margin: 5px;
@@ -91,7 +91,7 @@ body {
 }
 
 /* =========================
-   SCORE / FOUL GRID (IMPORTANT)
+   SCORE / FOUL GRID
 ========================= */
 .score-control,
 .fouls-control {
@@ -107,7 +107,6 @@ body {
   font-weight: bold;
 }
 
-/* EXACT PLACEMENT RULES */
 #home-team,
 #fouls-home {
   grid-column: 1;
@@ -118,6 +117,7 @@ body {
   grid-column: 2;
 }
 
+/* FIX: these selectors now match the ids added to the JSX buttons */
 #resetGoals,
 #resetFouls {
   grid-column: 1 / -1;

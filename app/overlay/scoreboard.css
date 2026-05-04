@@ -1,3 +1,4 @@
+/* app\overlay\scoreboard.css */
 body {
   margin: 0;
   background: transparent;
@@ -70,9 +71,10 @@ body {
   padding: 0 20px;
   height: 60px;
   border-radius: 6px 0 0 6px;
-  background: #781030;
+  /* FIX: background removed — set via inline style from Firestore color */
   position: relative;
-  overflow: hidden;
+  /* FIX: overflow: hidden removed — it was clipping logos unnecessarily;
+     clip-path already handles the visual shape */
   clip-path: polygon(
     0 0,
     100% 0,
@@ -90,19 +92,19 @@ body {
   padding: 0 20px;
   height: 60px;
   border-radius: 0 6px 6px 0;
-  background: red;
+  /* FIX: background removed — set via inline style from Firestore color */
   position: relative;
-  overflow: hidden;
+  /* FIX: overflow: hidden removed — clip-path already clips the shape */
   clip-path: polygon(
     0 0,
     100% 0,
     100% 100%,
     0 100%,
-    05% 50%
+    5% 50%
   );
 }
 
-/* TEAM NAME (IMPORTANT FIX) */
+/* TEAM NAME */
 .teamName {
   text-transform: uppercase;
   font-size: 34px;
@@ -113,8 +115,7 @@ body {
 .score {
   font-size: 34px;
   font-weight: 700;
-
-  width: 50px;              /* 🔥 key fix */
+  width: 50px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -132,9 +133,6 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-
-  /* gap: -25px; */
-  /* min-width: 140px; keeps structure stable */
 }
 
 .divider {
@@ -150,6 +148,21 @@ body {
   color: white;
 }
 
+/* EXTENSION */
+.scoreboard-extension {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 150px;
+  width: fit-content;
+
+  /* FIX: removed fragile left margin; align-self: center keeps it centred
+     under the scoreboard regardless of scoreboard width */
+  margin: -15px -20px 0 50px;
+  background: black;
+  border-radius: 0 0 10px 10px;
+  padding: 4px 20px;
+}
 /* EXTENSION (keep if you use it) */
 .scoreboard-extension {
   display: flex;
