@@ -171,7 +171,7 @@ body {
   gap: 150px;                 /* controls spacing between fouls */
   width: fit-content;
 
-  margin: -15px -20px 0 50px; /* centers it under scoreboard */
+  margin: -15px 0 0 50px; /* centers it under scoreboard */
   background: black;
   border-radius: 0 0 10px 10px;
   padding: 4px 20px;
