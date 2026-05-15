@@ -77,6 +77,69 @@ export default function ControlPage() {
   b: "",
 });
 
+useEffect(() => {
+  const handleKeyDown = (e: KeyboardEvent) => {
+    // avoid typing in inputs
+    const tag = (e.target as HTMLElement)?.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+
+    switch (e.key.toLowerCase()) {
+
+      // SCORE
+      case "q":
+        changeScore("A", 1);
+        break;
+
+      case "a":
+        changeScore("A", -1);
+        break;
+
+      case "w":
+        changeScore("B", 1);
+        break;
+
+      case "s":
+        changeScore("B", -1);
+        break;
+
+      // TIMER
+      case " ":
+        e.preventDefault();
+        startTimer();
+        break;
+
+      case "p":
+        pauseTimer();
+        break;
+
+      case "r":
+        resetTimer();
+        break;
+
+      // FOULS
+      case "e":
+        changeFoul("A", 1);
+        break;
+
+      case "d":
+        changeFoul("B", 1);
+        break;
+
+      // QUICK RESET SCORE
+      case "x":
+        resetScore();
+        break;
+
+      case "c":
+        resetFouls();
+        break;
+    }
+  };
+
+  window.addEventListener("keydown", handleKeyDown);
+  return () => window.removeEventListener("keydown", handleKeyDown);
+}, [state]);
+
   /* ── FIRESTORE SYNC ── */
 const send = (newState: Scoreboard) => {
   const payload = {
