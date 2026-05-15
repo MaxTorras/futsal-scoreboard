@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { doc, setDoc, collection, getDocs } from "firebase/firestore";
+import { doc, setDoc, collection, getDocs, addDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import "../control/control.css";
 import { CLOUDINARY_URL, UPLOAD_PRESET } from "@/lib/cloudinary";
@@ -66,6 +66,8 @@ export default function ControlPage() {
   const [presets, setPresets] = useState<any[]>([]);
   const [selectedPreset, setSelectedPreset] = useState<string>("");
   const [presetTarget, setPresetTarget] = useState<"A" | "B">("A");
+  const [homeTeamId, setHomeTeamId] = useState("");
+  const [awayTeamId, setAwayTeamId] = useState("");
 
   const [logoPreview, setLogoPreview] = useState<{
   a: string;
@@ -283,6 +285,57 @@ useEffect(() => {
 
   return () => clearInterval(interval);
 }, [state.timer.running]);
+
+const applyTeam = (side: "a" | "b") => {
+  const id = side === "a" ? homeTeamId : awayTeamId;
+
+  const team = presets.find((t) => t.id === id);
+  if (!team) return;
+
+  update({
+    ...state,
+    teams: {
+      ...state.teams,
+      [side]: {
+        name: team.name,
+        color: team.color,
+        logo: team.logo,
+      },
+    },
+  });
+};
+
+const saveTeamToDatabase = async (team: "a" | "b") => {
+  console.log("Saving team:", team, state.teams[team]);
+  try {
+    const teamData = state.teams[team];
+
+    await addDoc(collection(db, "teams"), {
+      name: teamData.name,
+      color: teamData.color,
+      logo: teamData.logo,
+    });
+
+    console.log("Team saved!");
+  } catch (err) {
+    console.error("Error saving team:", err);
+  }
+};
+
+const loadTeams = async () => {
+  const snapshot = await getDocs(collection(db, "teams"));
+
+  const teams = snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+
+  setPresets(teams);
+};
+
+useEffect(() => {
+  loadTeams();
+}, []);
   /* ===========================
      RENDER
   =========================== */
@@ -388,39 +441,99 @@ useEffect(() => {
 
   {/* LOGO UPLOAD A */}
   <input
-  type="file"
-  accept="image/*"
-  onChange={async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    type="file"
+    accept="image/*"
+    onChange={async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-    const url = await uploadToCloudinary(file);
-    updateTeam("a", "logo", url);
-  }}
-/>
+      const url = await uploadToCloudinary(file);
+      updateTeam("a", "logo", url);
+    }}
+  />
 
   {/* LOGO UPLOAD B */}
   <input
-  type="file"
-  accept="image/*"
-  onChange={async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    type="file"
+    accept="image/*"
+    onChange={async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-    const url = await uploadToCloudinary(file);
-    updateTeam("b", "logo", url);
-  }}
-/>
+      const url = await uploadToCloudinary(file);
+      updateTeam("b", "logo", url);
+    }}
+  />
 
-  {/* SET BUTTON (IMPORTANT FIX) */}
+  <button onClick={() => saveTeamToDatabase("a")}>
+    Save Home Team
+  </button>
+
+  <button onClick={() => saveTeamToDatabase("b")}>
+    Save Away Team
+  </button>
+
+  {/* ───────── HOME LOAD ───────── */}
+  <div style={{ textAlign: "center", width: "100%", marginTop: 10 }}>
+    <div>HOME LOAD</div>
+
+    <select
+  value={homeTeamId}
+  onChange={(e) => setHomeTeamId(e.target.value)}
+  style={{ width: "100%", textAlign: "center", marginTop: 5 }}
+>
+  <option value="">Select a team</option>
+
+  {presets.map((team) => (
+    <option key={team.id} value={team.id}>
+      {team.name}
+    </option>
+  ))}
+</select>
+
+    <button
+      className="button"
+      onClick={() => applyTeam("a")}
+    >
+      Apply to HOME
+    </button>
+  </div>
+
+  {/* ───────── AWAY LOAD ───────── */}
+  <div style={{ textAlign: "center", width: "100%", marginTop: 10 }}>
+    <div>AWAY LOAD</div>
+
+    <select
+  value={awayTeamId}
+  onChange={(e) => setAwayTeamId(e.target.value)}
+  style={{ width: "100%", textAlign: "center", marginTop: 5 }}
+>
+  <option value="">Select a team</option>
+
+  {presets.map((team) => (
+    <option key={team.id} value={team.id}>
+      {team.name}
+    </option>
+  ))}
+</select>
+
+    <button
+      className="button"
+      onClick={() => applyTeam("b")}
+    >
+      Apply to AWAY
+    </button>
+  </div>
+
+  {/* SET BUTTON */}
   <button
     className="button"
     onClick={() =>
-  update({
-    ...state,
-    teams: state.teams,
-  })
-}
+      update({
+        ...state,
+        teams: state.teams,
+      })
+    }
     style={{ gridColumn: "1 / -1" }}
   >
     SET TEAMS

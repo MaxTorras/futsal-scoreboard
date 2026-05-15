@@ -195,3 +195,16 @@ input[type="color"]::-webkit-color-swatch {
 input[type="color"]::-webkit-color-swatch-wrapper {
   padding: 0;
 }
+
+select {
+  background: #111;   /* dark background */
+  color: #fff;        /* white text */
+  border: 1px solid #333;
+  padding: 8px;
+  border-radius: 6px;
+}
+
+option {
+  background: #111;
+  color: #fff;
+}
