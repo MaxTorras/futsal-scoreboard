@@ -1,3 +1,4 @@
+// app\control\page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -308,6 +309,7 @@ const pauseTimer = () => {
       ...state.timer,
       remaining: Math.max(state.timer.remaining - elapsed, 0),
       running: false,
+      lastUpdate: now,
     },
   });
 };
@@ -402,207 +404,418 @@ useEffect(() => {
   /* ===========================
      RENDER
   =========================== */
-  return (
-    <div className="control">
+return (
+  <div className="control">
 
-      {/* TIMER */}
-      <div className="timer-control center-text section">
-        TIMER CONTROL
+    {/* =========================
+        TABS
+    ========================= */}
 
-        <div id="timeDisplay">
-          {Math.floor(state.timer.remaining / 60)}:
-          {(state.timer.remaining % 60).toString().padStart(2, "0")}
+    <div className="tabs">
+
+      <button
+        className={`tab-button ${
+          tab === "control" ? "active" : ""
+        }`}
+        onClick={() => setTab("control")}
+      >
+        MATCH
+      </button>
+
+      <button
+        className={`tab-button ${
+          tab === "design" ? "active" : ""
+        }`}
+        onClick={() => setTab("design")}
+      >
+        TEAMS
+      </button>
+
+    </div>
+
+
+    {/* =========================
+        MATCH TAB
+    ========================= */}
+
+    {tab === "control" && (
+
+      <div className="match-control section">
+
+        <div className="match-title">
+          MATCH CONTROL
         </div>
 
-        <div id="timer-adjuster">
-          <div className="center-text">Timer Adjuster</div>
 
-          <button className="button" onClick={() => setTime(state.timer.remaining - 10)}>-10s</button>
-          <button className="button" onClick={() => setTime(state.timer.remaining - 1)}>-1s</button>
-          <button className="button" onClick={() => setTime(state.timer.remaining + 1)}>+1s</button>
-          <button className="button" onClick={() => setTime(state.timer.remaining + 10)}>+10s</button>
+        {/* =========================
+            SCORE
+        ========================= */}
 
-          <button className="button" onClick={() => setTime(1200)}>20:00</button>
-          <button className="button" onClick={() => setTime(600)}>10:00</button>
-          <button className="button" onClick={() => setTime(300)}>05:00</button>
+        <div className="scoreboard">
+
+          {/* HOME */}
+
+          <div className="score-team">
+
+            <div className="score-team-name">
+              {state.teams.a.name}
+            </div>
+
+            <div className="score-number">
+              {state.score.a}
+            </div>
+
+            <div className="score-buttons">
+
+              <button
+                className="button score-button"
+                onClick={() => changeScore("A", -1)}
+              >
+                −
+              </button>
+
+              <button
+                className="button score-button"
+                onClick={() => changeScore("A", 1)}
+              >
+                +
+              </button>
+
+            </div>
+
+          </div>
+
+
+          {/* AWAY */}
+
+          <div className="score-team">
+
+            <div className="score-team-name">
+              {state.teams.b.name}
+            </div>
+
+            <div className="score-number">
+              {state.score.b}
+            </div>
+
+            <div className="score-buttons">
+
+              <button
+                className="button score-button"
+                onClick={() => changeScore("B", -1)}
+              >
+                −
+              </button>
+
+              <button
+                className="button score-button"
+                onClick={() => changeScore("B", 1)}
+              >
+                +
+              </button>
+
+            </div>
+
+          </div>
+
         </div>
 
-        <div id="timer-set">
-          <div className="center-text">Timer Control</div>
-          <button className="button" onClick={startTimer}>START</button>
-          <button className="button" onClick={pauseTimer}>PAUSE</button>
-          <button className="button" onClick={resetTimer}>RESET TIMER</button>
+
+        {/* RESET GOALS */}
+
+        <button
+          className="button reset-goals"
+          onClick={resetScore}
+        >
+          RESET GOALS
+        </button>
+
+
+        {/* =========================
+            FOULS
+        ========================= */}
+
+        <div className="fouls">
+
+          <div className="fouls-title">
+            FOULS
+          </div>
+
+          <div className="fouls-row">
+
+            {/* HOME FOULS */}
+
+            <div className="foul-team">
+
+              <div className="foul-team-name">
+                {state.teams.a.name}
+              </div>
+
+              <button
+                className="button foul-button"
+                onClick={() => changeFoul("A", -1)}
+              >
+                −
+              </button>
+
+              <button
+                className="button foul-button"
+                onClick={() => changeFoul("A", 1)}
+              >
+                +
+              </button>
+
+            </div>
+
+
+            {/* AWAY FOULS */}
+
+            <div className="foul-team">
+
+              <div className="foul-team-name">
+                {state.teams.b.name}
+              </div>
+
+              <button
+                className="button foul-button"
+                onClick={() => changeFoul("B", -1)}
+              >
+                −
+              </button>
+
+              <button
+                className="button foul-button"
+                onClick={() => changeFoul("B", 1)}
+              >
+                +
+              </button>
+
+            </div>
+
+          </div>
+
+          <button
+            className="button reset-fouls"
+            onClick={resetFouls}
+          >
+            RESET FOULS
+          </button>
+
         </div>
+
       </div>
 
-      {/* SCORE */}
-      <div className="score-control center-text section">
-        SCORE CONTROL
+    )}
 
-        <div id="home-team" className="panel">
-          <div>HOME TEAM</div>
-          <button className="button" onClick={() => changeScore("A", 1)}>+1</button>
-          <button className="button" onClick={() => changeScore("A", -1)}>-1</button>
+
+    {/* =========================
+        TEAMS TAB
+    ========================= */}
+
+    {tab === "design" && (
+
+      <div className="team-control section">
+
+        <div className="team-title">
+          TEAM CONTROL
         </div>
 
-        <div id="away-team" className="panel">
-          <div>AWAY TEAM</div>
-          <button className="button" onClick={() => changeScore("B", 1)}>+1</button>
-          <button className="button" onClick={() => changeScore("B", -1)}>-1</button>
+
+        {/* =========================
+            HOME
+        ========================= */}
+
+        <div className="team-box">
+
+          <div className="team-box-title">
+            HOME
+          </div>
+
+          <input
+            className="team-input"
+            value={state.teams.a.name}
+            onChange={(e) =>
+              updateTeam("a", "name", e.target.value)
+            }
+          />
+
+          <input
+            className="team-color"
+            type="color"
+            value={state.teams.a.color}
+            onChange={(e) =>
+              updateTeam("a", "color", e.target.value)
+            }
+          />
+
+          <input
+            className="team-file"
+            type="file"
+            accept="image/*"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+
+              const url = await uploadToCloudinary(file);
+              updateTeam("a", "logo", url);
+            }}
+          />
+
+          <button
+            className="button team-save"
+            onClick={() => saveTeamToDatabase("a")}
+          >
+            SAVE HOME
+          </button>
+
         </div>
 
-        <button className="button" onClick={resetScore}>Reset Goals</button>
+
+        {/* =========================
+            AWAY
+        ========================= */}
+
+        <div className="team-box">
+
+          <div className="team-box-title">
+            AWAY
+          </div>
+
+          <input
+            className="team-input"
+            value={state.teams.b.name}
+            onChange={(e) =>
+              updateTeam("b", "name", e.target.value)
+            }
+          />
+
+          <input
+            className="team-color"
+            type="color"
+            value={state.teams.b.color}
+            onChange={(e) =>
+              updateTeam("b", "color", e.target.value)
+            }
+          />
+
+          <input
+            className="team-file"
+            type="file"
+            accept="image/*"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+
+              const url = await uploadToCloudinary(file);
+              updateTeam("b", "logo", url);
+            }}
+          />
+
+          <button
+            className="button team-save"
+            onClick={() => saveTeamToDatabase("b")}
+          >
+            SAVE AWAY
+          </button>
+
+        </div>
+
+
+        {/* =========================
+            LOAD SAVED TEAMS
+        ========================= */}
+
+        <div className="team-load">
+
+          <div className="team-load-title">
+            LOAD SAVED TEAM
+          </div>
+
+          <div className="team-load-row">
+
+            {/* HOME */}
+
+            <div className="team-load-box">
+
+              <div>HOME</div>
+
+              <select
+                value={homeTeamId}
+                onChange={(e) =>
+                  setHomeTeamId(e.target.value)
+                }
+              >
+
+                <option value="">
+                  Select team
+                </option>
+
+                {presets.map((team) => (
+                  <option
+                    key={team.id}
+                    value={team.id}
+                  >
+                    {team.name}
+                  </option>
+                ))}
+
+              </select>
+
+              <button
+                className="button"
+                onClick={() => applyTeam("a")}
+              >
+                APPLY
+              </button>
+
+            </div>
+
+
+            {/* AWAY */}
+
+            <div className="team-load-box">
+
+              <div>AWAY</div>
+
+              <select
+                value={awayTeamId}
+                onChange={(e) =>
+                  setAwayTeamId(e.target.value)
+                }
+              >
+
+                <option value="">
+                  Select team
+                </option>
+
+                {presets.map((team) => (
+                  <option
+                    key={team.id}
+                    value={team.id}
+                  >
+                    {team.name}
+                  </option>
+                ))}
+
+              </select>
+
+              <button
+                className="button"
+                onClick={() => applyTeam("b")}
+              >
+                APPLY
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
       </div>
 
-      {/* FOULS */}
-      <div className="fouls-control center-text section">
-        FOULS CONTROL
+    )}
 
-        <div id="fouls-home" className="panel">
-          <div>Home Fouls</div>
-          <button className="button" onClick={() => changeFoul("A", 1)}>+1</button>
-          <button className="button" onClick={() => changeFoul("A", -1)}>-1</button>
-        </div>
-
-        <div id="fouls-away" className="panel">
-          <div>Away Fouls</div>
-          <button className="button" onClick={() => changeFoul("B", 1)}>+1</button>
-          <button className="button" onClick={() => changeFoul("B", -1)}>-1</button>
-        </div>
-
-        <button className="button" onClick={resetFouls}>Reset Fouls</button>
-      </div>
-
-{/* ───────── TEAMS ───────── */}
-<div className="section team-control">
-
-  <div className="title">TEAM CONTROL</div>
-
-  {/* NAMES */}
-  <input
-    value={state.teams.a.name}
-    onChange={(e) => updateTeam("a", "name", e.target.value)}
-  />
-
-  <input
-    value={state.teams.b.name}
-    onChange={(e) => updateTeam("b", "name", e.target.value)}
-  />
-
-  {/* COLORS */}
-  <input
-    type="color"
-    value={state.teams.a.color}
-    onChange={(e) => updateTeam("a", "color", e.target.value)}
-  />
-
-  <input
-    type="color"
-    value={state.teams.b.color}
-    onChange={(e) => updateTeam("b", "color", e.target.value)}
-  />
-
-  {/* LOGO UPLOAD A */}
-  <input
-    type="file"
-    accept="image/*"
-    onChange={async (e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-
-      const url = await uploadToCloudinary(file);
-      updateTeam("a", "logo", url);
-    }}
-  />
-
-  {/* LOGO UPLOAD B */}
-  <input
-    type="file"
-    accept="image/*"
-    onChange={async (e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-
-      const url = await uploadToCloudinary(file);
-      updateTeam("b", "logo", url);
-    }}
-  />
-
-  <button onClick={() => saveTeamToDatabase("a")}>
-    Save Home Team
-  </button>
-
-  <button onClick={() => saveTeamToDatabase("b")}>
-    Save Away Team
-  </button>
-
-  {/* ───────── HOME LOAD ───────── */}
-  <div style={{ textAlign: "center", width: "100%", marginTop: 10 }}>
-    <div>HOME LOAD</div>
-
-    <select
-  value={homeTeamId}
-  onChange={(e) => setHomeTeamId(e.target.value)}
-  style={{ width: "100%", textAlign: "center", marginTop: 5 }}
->
-  <option value="">Select a team</option>
-
-  {presets.map((team) => (
-    <option key={team.id} value={team.id}>
-      {team.name}
-    </option>
-  ))}
-</select>
-
-    <button
-      className="button"
-      onClick={() => applyTeam("a")}
-    >
-      Apply to HOME
-    </button>
   </div>
-
-  {/* ───────── AWAY LOAD ───────── */}
-  <div style={{ textAlign: "center", width: "100%", marginTop: 10 }}>
-    <div>AWAY LOAD</div>
-
-    <select
-  value={awayTeamId}
-  onChange={(e) => setAwayTeamId(e.target.value)}
-  style={{ width: "100%", textAlign: "center", marginTop: 5 }}
->
-  <option value="">Select a team</option>
-
-  {presets.map((team) => (
-    <option key={team.id} value={team.id}>
-      {team.name}
-    </option>
-  ))}
-</select>
-
-    <button
-      className="button"
-      onClick={() => applyTeam("b")}
-    >
-      Apply to AWAY
-    </button>
-  </div>
-
-  {/* SET BUTTON */}
-  <button
-    className="button"
-    onClick={() =>
-      update({
-        ...state,
-        teams: state.teams,
-      })
-    }
-    style={{ gridColumn: "1 / -1" }}
-  >
-    SET TEAMS
-  </button>
-
-</div>
-</div>
-  );
+);
 }

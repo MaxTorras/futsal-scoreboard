@@ -1,4 +1,5 @@
 /* app\control\control.css */
+
 body {
   margin: 0;
   background: transparent;
@@ -6,26 +7,63 @@ body {
   font-family: 'Poppins', Arial, sans-serif;
 }
 
-.center-text {
-  text-align: center;
+.control {
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 
 /* =========================
-   BUTTON
+   TABS
 ========================= */
-.button {
+
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin: 5px;
+}
+
+.tab-button {
+  background: #1a1a1a;
+  color: #aaa;
+  border: none;
+  border-radius: 6px;
+  padding: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.tab-button.active {
+  background: #fff;
+  color: #111;
+}
+
+/* =========================
+   GENERAL
+========================= */
+
+.section {
   background-color: #1a1a1a;
+  padding: 8px;
+  border-radius: 6px;
+  margin: 5px;
+}
+
+.button {
+  background-color: #2a2a2a;
   color: whitesmoke;
   font-size: 14px;
-  border-radius: 8px;
-  font-weight: bolder;
-  padding: 2px 7px;
+  border-radius: 7px;
+  font-weight: bold;
+  padding: 6px 10px;
   transition: 0.2s;
-  margin: 2px;
-  text-align: center;
-  appearance: none;
   border: none;
   cursor: pointer;
+  font-family: inherit;
 }
 
 .button:hover {
@@ -34,174 +72,256 @@ body {
 }
 
 /* =========================
-   PANEL
+   MATCH
 ========================= */
-.panel {
-  background-color: #2a2a2a;
-  margin: 5px;
-  border-radius: 4px;
-  padding: 2px;
-}
 
-/* =========================
-   SECTION
-========================= */
-.section {
-  background-color: #1a1a1a;
-  padding: 5px;
-  border-radius: 4px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-}
-
-/* =========================
-   CONTROL WRAPPER
-========================= */
-.control {
-  background: transparent;
+.match-control {
   display: flex;
   flex-direction: column;
-}
-
-/* =========================
-   TIMER
-========================= */
-#timeDisplay {
-  background-color: #242424;
-  margin: 5px;
-  font-size: 24px;
-  font-weight: bold;
-  text-align: center;
-  padding: 5px;
-}
-
-#timer-adjuster {
-  background-color: #242424;
-  margin: 5px;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-}
-
-#timer-adjuster > div:first-child {
-  grid-column: 1 / -1;
-}
-
-#timer-set {
-  background-color: #242424;
-  margin: 5px;
-}
-
-/* =========================
-   SCORE / FOUL GRID
-========================= */
-.score-control,
-.fouls-control {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto auto auto;
-  gap: 4px;
-}
-
-.title {
-  grid-column: 1 / -1;
-  text-align: center;
-  font-weight: bold;
-}
-
-#home-team,
-#fouls-home {
-  grid-column: 1;
-}
-
-#away-team,
-#fouls-away {
-  grid-column: 2;
-}
-
-/* FIX: these selectors now match the ids added to the JSX buttons */
-#resetGoals,
-#resetFouls {
-  grid-column: 1 / -1;
-}
-
-/* =========================
-   TEAM CONTROL
-========================= */
-.team-control {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-auto-rows: auto;
-  gap: 6px;
-  align-items: center;
-  justify-items: center;
-}
-
-#input-teamA,
-#input-teamB {
-  width: 100%;
-  background: transparent;
-  border: none;
-  color: white;
-  text-align: center;
-}
-
-/* =========================
-   INPUT BASE
-========================= */
-input {
-  outline: none;
-  font-family: inherit;
-  font-size: 14px;
-}
-
-.panel input:focus {
-  background-color: #333;
-}
-
-/* =========================
-   LOGO
-========================= */
-.logo-control {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   gap: 8px;
 }
 
-.logo-preview {
-  width: 60px;
-  height: 60px;
-  background: #1a1a1a;
-  border-radius: 8px;
-  object-fit: contain;
-  padding: 6px;
+.match-title {
+  text-align: center;
+  font-size: 13px;
+  font-weight: bold;
+  color: #aaa;
 }
 
 /* =========================
-   COLOR PICKER
+   SCOREBOARD
 ========================= */
-input[type="color"] {
-  width: 100px;
+
+.scoreboard {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.score-team {
+  background: #242424;
+  border-radius: 8px;
+  padding: 8px;
+  text-align: center;
+}
+
+.score-team-name {
+  font-size: 15px;
+  font-weight: bold;
+  min-height: 22px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* BIG SCORE */
+
+.score-number {
+  font-size: 72px;
+  line-height: 1;
+  font-weight: bold;
+  margin: 8px 0 10px;
+}
+
+/* SCORE BUTTONS */
+
+.score-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+
+.score-button {
+  height: 42px;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+/* RESET */
+
+.reset-goals {
+  width: 100%;
+  margin-top: 2px;
+  height: 34px;
+}
+
+/* =========================
+   FOULS
+========================= */
+
+.fouls {
+  background: #242424;
+  border-radius: 8px;
+  padding: 7px;
+}
+
+.fouls-title {
+  text-align: center;
+  font-size: 12px;
+  font-weight: bold;
+  color: #aaa;
+  margin-bottom: 5px;
+}
+
+.fouls-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.foul-team {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 4px;
+}
+
+.foul-team-name {
+  font-size: 12px;
+  font-weight: bold;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.foul-button {
+  width: 30px;
+  height: 28px;
+  padding: 0;
+  font-size: 16px;
+}
+
+.reset-fouls {
+  width: 100%;
+  margin-top: 6px;
+  height: 28px;
+  font-size: 12px;
+}
+
+/* =========================
+   TEAMS
+========================= */
+
+.team-control {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.team-title {
+  grid-column: 1 / -1;
+  text-align: center;
+  font-size: 15px;
+  font-weight: bold;
+}
+
+.team-box {
+  background: #242424;
+  border-radius: 7px;
+  padding: 8px;
+  text-align: center;
+}
+
+.team-box-title {
+  font-size: 13px;
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+
+.team-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: #111;
+  border: 1px solid #333;
+  color: white;
+  padding: 6px;
+  border-radius: 5px;
+  text-align: center;
+  font-family: inherit;
+  margin-bottom: 6px;
+}
+
+.team-color {
+  width: 60px;
   height: 25px;
+  display: block;
+  margin: 4px auto 7px;
   border: none;
   background: none;
   cursor: pointer;
 }
 
-input[type="color"]::-webkit-color-swatch {
-  border: none;
-  border-radius: 8px;
+.team-file {
+  width: 100%;
+  font-size: 10px;
+  margin-bottom: 7px;
 }
 
-input[type="color"]::-webkit-color-swatch-wrapper {
-  padding: 0;
+.team-save {
+  width: 100%;
+  font-size: 12px;
+}
+
+/* =========================
+   SAVED TEAMS
+========================= */
+
+.team-load {
+  grid-column: 1 / -1;
+  background: #242424;
+  border-radius: 7px;
+  padding: 8px;
+}
+
+.team-load-title {
+  text-align: center;
+  font-size: 12px;
+  font-weight: bold;
+  color: #aaa;
+  margin-bottom: 6px;
+}
+
+.team-load-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.team-load-box {
+  text-align: center;
+  font-size: 12px;
+}
+
+.team-load-box select {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 4px 0;
+}
+
+.team-load-box .button {
+  width: 100%;
+}
+
+/* =========================
+   INPUTS
+========================= */
+
+input {
+  outline: none;
+  font-family: inherit;
+}
+
+input:focus {
+  background-color: #333;
 }
 
 select {
-  background: #111;   /* dark background */
-  color: #fff;        /* white text */
+  background: #111;
+  color: #fff;
   border: 1px solid #333;
-  padding: 8px;
-  border-radius: 6px;
+  padding: 6px;
+  border-radius: 5px;
+  font-family: inherit;
 }
 
 option {
