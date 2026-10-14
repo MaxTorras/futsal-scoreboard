@@ -31,6 +31,29 @@ function formatTime(sec: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+
+/* ---------------------------
+   TEXT COLOUR CONTRAST
+---------------------------- */
+function getTextColor(hex: string): string {
+  const normalized = hex.replace("#", "");
+
+  // Handle invalid or unsupported colours safely
+  if (!/^[0-9a-fA-F]{6}$/.test(normalized)) {
+    return "#ffffff";
+  }
+
+  const r = parseInt(normalized.substring(0, 2), 16);
+  const g = parseInt(normalized.substring(2, 4), 16);
+  const b = parseInt(normalized.substring(4, 6), 16);
+
+  // Calculate perceived brightness
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+
+  return brightness >= 160 ? "#000000" : "#ffffff";
+}
+
+
 /* ---------------------------
    MAIN OVERLAY
 ---------------------------- */
@@ -81,7 +104,10 @@ export default function OverlayPage() {
 
   // FIX: read team colors from Firestore so they reflect control-page changes
   const colorA = data?.teams?.a?.color ?? "#781030";
-  const colorB = data?.teams?.b?.color ?? "#ff0000";
+const colorB = data?.teams?.b?.color ?? "#ff0000";
+
+const textColorA = getTextColor(colorA);
+const textColorB = getTextColor(colorB);
 
   return (
     <div className="scoreboard-wrapper">
@@ -104,7 +130,9 @@ export default function OverlayPage() {
             {data?.teams?.a?.logo && (
               <img src={data.teams.a.logo} className="logo" alt="Team A logo" />
             )}
-            <div className="teamName">{data?.teams?.a?.name ?? "HOME"}</div>
+            <div className="teamName" style={{ color: textColorA }}>
+  {data?.teams?.a?.name ?? "HOME"}
+</div>
           </div>
 
           {/* SCORE */}
@@ -116,7 +144,9 @@ export default function OverlayPage() {
 
           {/* TEAM B — FIX: inline color from Firestore */}
           <div className="team-block-b" style={{ background: colorB }}>
-            <div className="teamName">{data?.teams?.b?.name ?? "AWAY"}</div>
+            <div className="teamName" style={{ color: textColorB }}>
+  {data?.teams?.b?.name ?? "AWAY"}
+</div>
             {data?.teams?.b?.logo && (
               <img src={data.teams.b.logo} className="logo" alt="Team B logo" />
             )}
